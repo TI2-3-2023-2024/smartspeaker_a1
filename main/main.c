@@ -1,3 +1,10 @@
+/*
+Bestandsnaam: main.c
+Auteur: Niels, Ruben en Thijme
+Datum: 28-2-2024
+Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
+*/
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <freertos/FreeRTOS.h>
@@ -20,13 +27,6 @@ void song_selection_menu(song songs[], size_t size);
 static i2c_dev_t pcf8574;
 
 static hd44780_t lcd;
-
-static uint32_t get_time_sec()
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec;
-}
 
 static const uint8_t char_data[] = {
     0x04, 0x0e, 0x0e, 0x0e, 0x1f, 0x00, 0x04, 0x00,
@@ -89,7 +89,7 @@ void song_selection_menu(song songs[], size_t size)
 
     char song_count[20];
 
-    sprintf(song_count, "%d/%d", songs[0].id, size);
+        sprintf(song_count, "%d/%d", songs[0].id, size);
 
     hd44780_gotoxy(&lcd, 15, 0);
     hd44780_puts(&lcd, song_count);
