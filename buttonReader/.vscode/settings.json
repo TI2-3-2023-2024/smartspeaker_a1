@@ -1,0 +1,17 @@
+{
+    "C_Cpp.intelliSenseEngine": "default",
+    "idf.adapterTargetName": "esp32",
+    "idf.customExtraPaths": "c:\\Users\\teunl\\.espressif\\tools\\xtensa-esp-elf-gdb\\11.2_20220823\\xtensa-esp-elf-gdb\\bin;c:\\Users\\teunl\\.espressif\\tools\\riscv32-esp-elf-gdb\\11.2_20220823\\riscv32-esp-elf-gdb\\bin;c:\\Users\\teunl\\.espressif\\tools\\xtensa-esp32-elf\\esp-2021r2-patch5-8.4.0\\xtensa-esp32-elf\\bin;c:\\Users\\teunl\\.espressif\\tools\\xtensa-esp32s2-elf\\esp-2021r2-patch5-8.4.0\\xtensa-esp32s2-elf\\bin;c:\\Users\\teunl\\.espressif\\tools\\xtensa-esp32s3-elf\\esp-2021r2-patch5-8.4.0\\xtensa-esp32s3-elf\\bin;c:\\Users\\teunl\\.espressif\\tools\\riscv32-esp-elf\\esp-2021r2-patch5-8.4.0\\riscv32-esp-elf\\bin;c:\\Users\\teunl\\.espressif\\tools\\esp32ulp-elf\\2.35_20220830\\esp32ulp-elf\\bin;c:\\Users\\teunl\\.espressif\\tools\\cmake\\3.23.1\\bin;c:\\Users\\teunl\\.espressif\\tools\\openocd-esp32\\v0.12.0-esp32-20230921\\openocd-esp32\\bin;c:\\Users\\teunl\\.espressif\\tools\\ninja\\1.10.2;c:\\Users\\teunl\\.espressif\\tools\\idf-exe\\1.0.3;c:\\Users\\teunl\\.espressif\\tools\\ccache\\4.3\\ccache-4.3-windows-64;c:\\Users\\teunl\\.espressif\\tools\\dfu-util\\0.9\\dfu-util-0.9-win64",
+    "idf.customExtraVars": {
+        "OPENOCD_SCRIPTS": "c:\\Users\\teunl\\.espressif\\tools\\openocd-esp32\\v0.12.0-esp32-20230921/openocd-esp32/share/openocd/scripts",
+        "IDF_CCACHE_ENABLE": "1"
+    },
+    "idf.espIdfPathWin": "C:\\esp\\v4.4\\esp-idf",
+    "idf.openOcdConfigs": [
+        "board/esp32-bridge.cfg"
+    ],
+    "idf.portWin": "COM6",
+    "idf.pythonBinPathWin": "c:\\Users\\teunl\\.espressif\\python_env\\idf4.4_py3.8_env\\Scripts\\python.exe",
+    "idf.toolsPathWin": "c:\\Users\\teunl\\.espressif",
+    "idf.flashType": "UART"
+}
