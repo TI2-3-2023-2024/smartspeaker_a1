@@ -169,21 +169,22 @@ void init_lcd(void *pvParameters)
     main_menu();
 }
 
-static esp_err_t mpu9250_register_read(uint8_t reg_addr, uint8_t *data, size_t len)
-{
-    return i2c_master_write_read_device(I2C_MASTER_NUM, MPU9250_SENSOR_ADDR, &reg_addr, 1, data, len, I2C_MASTER_TIMEOUT_MS / portTICK_RATE_MS);
-}
-
-static esp_err_t mpu9250_register_write_byte(uint8_t data)
+static esp_err_t write_coordinates(uint8_t x, uint8_t y)
 {
     int ret;
-    uint8_t write_buf[1] = {data};
+    uint8_t write_buf[2] = {x, y};
 
     ret = i2c_master_write_to_device(I2C_MASTER_NUM, MPU9250_SENSOR_ADDR, write_buf, sizeof(write_buf), I2C_MASTER_TIMEOUT_MS / portTICK_RATE_MS);
 
     return ret;
 }
 
+/* 
+* Functie: i2c_master_init
+* Beschrijving: Initialiseert dit device als een i2c master
+* Parameters: Geen 
+* Retourneert: Status van installatie i2c drivers
+*/
 static esp_err_t i2c_master_init(void)
 {
     int i2c_master_port = I2C_MASTER_NUM;
@@ -204,12 +205,13 @@ static esp_err_t i2c_master_init(void)
 
 void app_main()
 {
-    uint8_t data[2];
     ESP_ERROR_CHECK(i2c_master_init());
     ESP_LOGI(TAG, "I2C initialized successfully");
 
-    /* Demonstrate writing by reseting the MPU9250 */
-    ESP_ERROR_CHECK(mpu9250_register_write_byte(7));
+    //test data
+    ESP_ERROR_CHECK(write_coordinates(7, 5));
+    ESP_ERROR_CHECK(write_coordinates(0, 5));
+    ESP_ERROR_CHECK(write_coordinates(31, 5));
 
     ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
     ESP_LOGI(TAG, "I2C unitialized successfully");

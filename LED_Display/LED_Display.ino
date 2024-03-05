@@ -1,3 +1,11 @@
+/* 
+* Bestandsnaam: LED_DISPLAY.ino 
+* Auteur: Niels en Thijme
+* Datum: 5 maart 2024 
+* Beschrijving: Dit bestand bevat de functionaliteit van de esp32 om een LED display aan kan sturen en I2C communicatie ontvangen
+*/
+
+
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <WireSlave.h>
@@ -21,23 +29,52 @@ void setup() {
   ws2812b.begin();  // initialize WS2812B strip object (REQUIRED)
   ws2812b.clear();  // set all pixel colors to 'off'. It only takes effect if pixels.show() is called
 
-  turn_on_led(3,2, 255, 0, 0);
-  turn_on_led(0,3, 0, 0, 255);
-  turn_on_led(8,7, 0, 255, 0);
-  turn_on_led(5,5, 0, 255, 0);
+ // turn_on_led(3,2, 255, 0, 0);
+  //turn_on_led(0,3, 0, 0, 255);
+  //turn_on_led(8,7, 0, 255, 0);
+  //turn_on_led(5,5, 0, 255, 0);
 
-  turn_on_row(0, 255, 0, 0);
+  //turn_on_row(0, 255, 0, 0);
 }
 
-void receiveEvent(int howMany)
+/* 
+* Functie: receiveEvent
+* Beschrijving: zet de led aan van de coordinaten die worden ontvangen via I2C
+* Parameters: Geen 
+* Retourneert: Geen 
+*/
+void receiveEvent()
 {
-  while(1 < Wire.available()) // loop through all but the last
+  int x;
+  int y;
+  while(Wire.available()) // loop through all but the last
   {
-    char c = Wire.read(); // receive byte as a character
-    Serial.print(c);         // print the character
+    x = Wire.read(); // receive byte as a character
+    Serial.print("x: ");
+    Serial.print(x);         // print the character
+
+    Serial.println("");
+
+    y = Wire.read(); // receive byte as a character
+     Serial.print("y: ");
+    Serial.print(y);         // print the character
   }
-  int x = Wire.read();    // receive byte as an integer
-  Serial.println(x);         // print the integer
+
+  turn_on_led(x, y, 0, 255, 0);
+}
+
+void turn_off_led(int x, int y){
+  int pixel = (8 * x);
+
+  if (x % 2 == 0){
+    pixel += 7;
+    pixel -= y;
+  }else {
+    pixel += y;
+  }
+    ws2812b.setPixelColor(pixel, ws2812b.Color(0, 0, 0));  // it only takes effect if pixels.show() is called
+    ws2812b.setBrightness(50); // set brightness of the pixels
+    ws2812b.show();     
 }
 
 void turn_on_led(int x, int y, int r, int g , int b){
