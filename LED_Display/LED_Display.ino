@@ -43,7 +43,7 @@ void setup() {
 * Parameters: Geen 
 * Retourneert: Geen 
 */
-void receiveEvent()
+void receiveEvent(int howMany)
 {
   int x;
   int y;
