@@ -1,5 +1,6 @@
 #include "esp_log.h"
 #include "driver/i2c.h"
+#include <inttypes.h>
 
 #define I2C_MASTER_SCL_IO 23        /*!< GPIO number used for I2C master clock */
 #define I2C_MASTER_SDA_IO 18        /*!< GPIO number used for I2C master data  */
@@ -15,7 +16,8 @@
 #define MPU9250_PWR_MGMT_1_REG_ADDR 0x6B /*!< Register addresses of the power managment register */
 #define MPU9250_RESET_BIT 7
 
-static const char *TAG = "i2c-simple-example";
-
 esp_err_t write_coordinates(uint8_t x, uint8_t y);
 esp_err_t i2c_master_init(void);
+// void init_i2c_display();
+
+static const char *TAG2 = "i2c-simple-example";

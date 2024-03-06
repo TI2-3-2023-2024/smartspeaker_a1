@@ -1,6 +1,5 @@
 #include "i2c_display.h"
 
-
 esp_err_t write_coordinates(uint8_t x, uint8_t y)
 {
     int ret;
@@ -11,12 +10,12 @@ esp_err_t write_coordinates(uint8_t x, uint8_t y)
     return ret;
 }
 
-/* 
-* Functie: i2c_master_init
-* Beschrijving: Initialiseert dit device als een i2c master
-* Parameters: Geen 
-* Retourneert: Status van installatie i2c drivers
-*/
+/*
+ * Functie: i2c_master_init
+ * Beschrijving: Initialiseert dit device als een i2c master
+ * Parameters: Geen
+ * Retourneert: Status van installatie i2c drivers
+ */
 esp_err_t i2c_master_init(void)
 {
     int i2c_master_port = I2C_MASTER_NUM;

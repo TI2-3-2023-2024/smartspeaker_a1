@@ -60,7 +60,7 @@ void receiveEvent(int howMany)
     Serial.print(y);         // print the character
   }
 
-  turn_on_led(x, y, 0, 255, 0);
+  turn_below_point_on(x, y, 0, 255, 0);
 }
 
 void turn_off_led(int x, int y){
