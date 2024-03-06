@@ -3,6 +3,10 @@ menu "Example configuration"
         hex "I2C address of PCF8574"
         default 0x27
 
+    config GPIO_EXPANDER_ADDR
+        hex "I2C address of MCP23017"
+        default 0x20
+
     config EXAMPLE_I2C_MASTER_SCL
         int "SCL GPIO Number"
         default 5 if IDF_TARGET_ESP8266
