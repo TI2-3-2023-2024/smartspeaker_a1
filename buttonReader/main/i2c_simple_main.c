@@ -89,7 +89,6 @@ void app_main(void)
     i2c_write_data(0x00,0x00);
     i2c_write_data(0x12,0xff);
 
-
     ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
     ESP_LOGI(TAG, "I2C unitialized successfully");
 }
