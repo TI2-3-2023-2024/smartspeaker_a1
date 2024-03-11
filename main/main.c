@@ -11,10 +11,14 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 #include "menu.h"
 #include "i2c_display.h"
 #include "lib\buttonreader.h"
+#include "sharedvariable.h"
 
+SemaphoreHandle_t xMutex;
 
 void app_main()
 {
+    xMutex = xSemaphoreCreateMutex();
+    
     // ESP_ERROR_CHECK(i2c_master_init());
     // ESP_LOGI(TAG, "I2C initialized successfully");
 
@@ -29,7 +33,11 @@ void app_main()
     // ESP_ERROR_CHECK(i2cdev_init());
 
     //init lcd and start main menu
-    // xTaskCreate(init_lcd, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 
-    xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+    if (xMutex != NULL){
+        
+        xTaskCreate(getButtonValue, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
+        // xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+    }
+
 }

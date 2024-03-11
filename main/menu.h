@@ -7,6 +7,7 @@
 #include <hd44780.h>
 #include <pcf8574.h>
 #include <string.h>
+#include <esp_log.h>
 
 
 typedef struct
@@ -15,8 +16,14 @@ typedef struct
     char *song_name;
 } song;
 
+typedef struct
+{
+  void (*set_lcd_text)(); 
+} menu_page;
+
 void input_menu();
 void main_menu();
 void song_selection_menu(song songs[], size_t size);
 
 void init_lcd(void *pvParameters);
+void getButtonValue();

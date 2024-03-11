@@ -1,9 +1,11 @@
 #include "menu.h"
-
+#include "sharedvariable.h"
 
 static i2c_dev_t pcf8574;
 
 static hd44780_t lcd;
+
+menu_page current_page;
 
 static const uint8_t char_data[] = {
     0x04, 0x0e, 0x0e, 0x0e, 0x1f, 0x00, 0x04, 0x00,
@@ -20,14 +22,7 @@ void main_menu()
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, "SELECT TYPE");
     hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "SD | API | MIC | x");
-
-    while (1)
-    {
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        input_menu();
-        return;
-    }
+    hd44780_puts(&lcd, "SD | RADIO | MIC | x");
 }
 
 void input_menu()
@@ -42,20 +37,20 @@ void input_menu()
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | x | x | x");
 
-    while (1)
-    {
-        vTaskDelay(pdMS_TO_TICKS(5000));
+    // while (1)
+    // {
+    //     vTaskDelay(pdMS_TO_TICKS(5000));
 
-        song songs[3] = {
-            {1, "brood"},
-            {2, "plankje"},
-            {3, "knakworst"}};
+    //     song songs[3] = {
+    //         {1, "brood"},
+    //         {2, "plankje"},
+    //         {3, "knakworst"}};
 
-        size_t num_songs = sizeof(songs) / sizeof(songs[0]);
+    //     size_t num_songs = sizeof(songs) / sizeof(songs[0]);
 
-        song_selection_menu(songs, num_songs);
-        return;
-    }
+    //     song_selection_menu(songs, num_songs);
+    //     return;
+    // }
 }
 
 void song_selection_menu(song songs[], size_t size)
@@ -85,13 +80,6 @@ void song_selection_menu(song songs[], size_t size)
 
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
-
-    while (1)
-    {
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        main_menu();
-        return;
-    }
 }
 
 void init_lcd(void *pvParameters)
@@ -110,11 +98,14 @@ void init_lcd(void *pvParameters)
             .bl = 3}};
 
     lcd = lcd_display;
+    printf("lcd doet iets \n");
 
     memset(&pcf8574, 0, sizeof(i2c_dev_t));
     ESP_ERROR_CHECK(pcf8574_init_desc(&pcf8574, CONFIG_EXAMPLE_I2C_ADDR, 0, CONFIG_EXAMPLE_I2C_MASTER_SDA, CONFIG_EXAMPLE_I2C_MASTER_SCL));
 
+    printf("error check 1\n");
     ESP_ERROR_CHECK(hd44780_init(&lcd));
+  
 
     hd44780_switch_backlight(&lcd, true);
 
@@ -124,5 +115,25 @@ void init_lcd(void *pvParameters)
     // test array of songs
     // todo replace with songs from sd card or api
 
-    main_menu();
+    // main_menu();
+    current_page.set_lcd_text = main_menu;
+    current_page.set_lcd_text();
+}
+
+uint16_t previousValue = -1;
+
+void getButtonValue()
+{
+    init_lcd(NULL);
+    // while (1)
+    // {
+    //     xSemaphoreTake(xMutex, portMAX_DELAY);
+    //     if (previousValue != buttonValue)
+    //     {
+    //         previousValue = buttonValue;
+    //         ESP_LOGI("hans", "retrieved value: %d", buttonValue);
+    //     }
+    //     xSemaphoreGive(xMutex);
+    //     vTaskDelay(pdMS_TO_TICKS(50));
+    // }
 }

@@ -1,8 +1,13 @@
 #include "buttonreader.h"
+#include "sharedvariable.h" 
 
 
 static const char* TAG = "IO Expander";
 static mcp23x17_t dev; //handle for i2c
+
+uint16_t buttonValue = 0;
+
+
 
 //button masks to set pins buttons are wired to
 const int BUTTON_MASK = 0x7f; //0b01111111 
@@ -36,10 +41,10 @@ uint16_t read_button(void *pvParameters){
     uint16_t pin_value; // values of pins get written to this variable
     mcp23x17_port_read(&dev, &pin_value );
     pin_value = (pin_value ^ BUTTON_MASK) & 0x00ff; //mask to filter wired pins
-    if (pin_value != 0)
-    {
-        ESP_LOGI(TAG, "retrieved value: %d", pin_value);
-    }
+//     if (pin_value != 0)
+//     {
+//        ESP_LOGI(TAG, "retrieved value: %d", pin_value);
+//     }
     return pin_value;
 }
 
@@ -72,7 +77,13 @@ void start_reader(){
     buttonreader_init();
     while(1)
     {
-        read_button(NULL);
+        xSemaphoreTake ( xMutex, portMAX_DELAY);
+ 
+        buttonValue = read_button(NULL);
+        // if(buttonValue != 0){
+        //     vTaskDelay(pdMS_TO_TICKS(1000));
+        // }
+        xSemaphoreGive (xMutex);
         vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
