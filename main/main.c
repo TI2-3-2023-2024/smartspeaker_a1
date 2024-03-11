@@ -33,10 +33,10 @@ void init_i2c_display()
 
 void app_main()
 {
-    xTaskCreatePinnedToCore(init_sd_card_player, "sd_card_player", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL, 0);
+    xTaskCreate(init_sd_card_player, "sd_card_player", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 
     init_i2c_display();
 
     // init lcd and start main menu
-    // xTaskCreatePinnedToCore(init_lcd, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL, 1);
+    xTaskCreate(init_lcd, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 }

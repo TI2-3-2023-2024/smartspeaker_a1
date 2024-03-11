@@ -4,8 +4,11 @@
     "idf.openOcdConfigs": [
         "board/esp32-bridge.cfg"
     ],
-    "idf.portWin": "COM9",
+    "idf.portWin": "COM5",
     "files.associations": {
-        "i2c.h": "c"
-    }
+        "i2c.h": "c",
+        "inttypes.h": "c",
+        "esp_types.h": "c"
+    },
+    "idf.espAdfPathWin": "c:\\esp\\esp-adf"
 }
