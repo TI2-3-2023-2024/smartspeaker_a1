@@ -1,0 +1,11 @@
+{
+    "idf.flashType": "UART",
+    "idf.adapterTargetName": "esp32",
+    "idf.openOcdConfigs": [
+        "board/esp32-bridge.cfg"
+    ],
+    "idf.portWin": "COM9",
+    "files.associations": {
+        "i2c.h": "c"
+    }
+}

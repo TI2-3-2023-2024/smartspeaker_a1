@@ -58,6 +58,8 @@ void receiveEvent(int howMany)
     y = Wire.read(); // receive byte as a character
      Serial.print("y: ");
     Serial.print(y);         // print the character
+
+       Serial.println("");
   }
 
   turn_below_point_on(x, y, 0, 255, 0);
@@ -86,6 +88,11 @@ void turn_on_led(int x, int y, int r, int g , int b){
   }else {
     pixel += y;
   }
+
+  r = (255/7) * y;
+  g = 255 - ((255/7) * y);
+  b = 0;
+
     ws2812b.setPixelColor(pixel, ws2812b.Color(r, g, b));  // it only takes effect if pixels.show() is called
     ws2812b.setBrightness(50); // set brightness of the pixels
     ws2812b.show();     
