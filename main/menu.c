@@ -82,7 +82,7 @@ void song_selection_menu(song songs[], size_t size)
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
 }
 
-void init_lcd(void *pvParameters)
+void init_lcd()
 {
     hd44780_t lcd_display = {
         .write_cb = write_lcd_data, // use callback to send data to LCD by I2C GPIO expander
@@ -116,24 +116,25 @@ void init_lcd(void *pvParameters)
     // todo replace with songs from sd card or api
 
     // main_menu();
-    current_page.set_lcd_text = main_menu;
+    current_page.set_lcd_text = input_menu;
     current_page.set_lcd_text();
 }
 
 uint16_t previousValue = -1;
 
-void getButtonValue()
+void getButtonValue(void * parameters)
 {
-    init_lcd(NULL);
-    // while (1)
-    // {
-    //     xSemaphoreTake(xMutex, portMAX_DELAY);
-    //     if (previousValue != buttonValue)
-    //     {
-    //         previousValue = buttonValue;
-    //         ESP_LOGI("hans", "retrieved value: %d", buttonValue);
-    //     }
-    //     xSemaphoreGive(xMutex);
-    //     vTaskDelay(pdMS_TO_TICKS(50));
-    // }
+    init_lcd();
+    while (1)
+    {
+        xSemaphoreTake(xMutex, portMAX_DELAY);
+        if (previousValue != buttonValue)
+        {
+            previousValue = buttonValue;
+            ESP_LOGI("hans", "retrieved value: %d", buttonValue);
+        }
+        xSemaphoreGive(xMutex);
+      
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
 }

@@ -25,5 +25,5 @@ void input_menu();
 void main_menu();
 void song_selection_menu(song songs[], size_t size);
 
-void init_lcd(void *pvParameters);
+void init_lcd();
 void getButtonValue();
