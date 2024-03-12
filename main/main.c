@@ -27,9 +27,6 @@ void init_i2c_display(void* pVParameters)
         ESP_ERROR_CHECK(write_coordinates(i, random));
     }
 
-   // ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
-   // ESP_LOGI(TAG2, "I2C unitialized successfully");
-
    vTaskDelete(NULL); 
 }
 
@@ -38,9 +35,8 @@ void app_main()
     xTaskCreate(init_sd_card_player, "sd_card_player", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 
     xTaskCreate(init_i2c_display, "init_i2c_display", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
-    //init_i2c_display(NULL);
 
     xTaskCreate(init_lcd, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
-    // init lcd and start main menu
+    
     
 }

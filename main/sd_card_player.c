@@ -1,9 +1,9 @@
 #include "sd_card_player.h"
 
-
 audio_pipeline_handle_t pipeline;
 audio_element_handle_t i2s_stream_writer, mp3_decoder, fatfs_stream_reader, rsp_handle;
 playlist_operator_handle_t sdcard_list_handle = NULL;
+
 
 static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
 {
@@ -18,6 +18,7 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
         ESP_LOGI(TAG, "[ * ] input key id is %d", (int)evt->data);
         switch ((int)evt->data) {
             case INPUT_KEY_USER_ID_PLAY:
+
                 ESP_LOGI(TAG, "[ * ] [Play] input key event");
                 audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
                 switch (el_state) {
@@ -44,8 +45,12 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
                 audio_pipeline_stop(pipeline);
                 audio_pipeline_wait_for_stop(pipeline);
                 audio_pipeline_terminate(pipeline);
+
+
                 sdcard_list_next(sdcard_list_handle, 1, &url);
                 ESP_LOGW(TAG, "URL: %s", url);
+
+
                 audio_element_set_uri(fatfs_stream_reader, url);
                 audio_pipeline_reset_ringbuffer(pipeline);
                 audio_pipeline_reset_elements(pipeline);
@@ -84,6 +89,23 @@ void sdcard_url_save_cb(void *user_data, char *url)
     }
 }
 
+
+/* 
+* Functie: remove_path 
+* Beschrijving: Verwijderd het pad, zodat de titel opgeslagen en gebruikt kan worden.
+* Parameters: File = Totale URL van het bestand, PATH = het deel dat verwijderd moet worden
+* Retourneert: Een char * die de file retoureert met de path er vanaf getrokken. 
+*/ 
+
+char * remove_path(char * file, const char * path){
+    int i = 0;
+    while(file[i] == path[i]){
+        i++; 
+    }
+    char * filename = file + i;
+    return filename;
+}
+
 void init_sd_card_player(void* pVParameters){
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -99,7 +121,32 @@ void init_sd_card_player(void* pVParameters){
     ESP_LOGI(TAG, "[1.2] Set up a sdcard playlist and scan sdcard music save to it");
     sdcard_list_create(&sdcard_list_handle);
     sdcard_scan(sdcard_url_save_cb, "/sdcard/songs", 0, (const char *[]) {"mp3"}, 1, sdcard_list_handle);
-    sdcard_list_show(sdcard_list_handle);
+
+    ESP_LOGI(TAG, "[1.4] PRINTING ALL THE SONGS");
+    char *url = NULL;
+
+    for(int i = 0; i < MAX_NUMBER_OF_SONGS; i++){
+        if (i == 0){
+            sdcard_list_current(sdcard_list_handle, &url); // url is default NULL, so song 1 on the SD card needs to be included as well
+        }
+        else sdcard_list_next(sdcard_list_handle, 1, &url); // rest of the songs gets added
+
+        char *song_name = strdup(remove_path(url, "file://sdcard/songs/"));
+        
+        if (song_name != NULL) {
+            ESP_LOGI(TAG, "[ SONG %d ]: %s", i, song_name);
+            song_names[i] = song_name;
+        } else {
+            ESP_LOGE(TAG, "Failed to allocate memory for song name");
+            break;
+        }
+    }
+
+    // For-loop to check if the song array is filled it with titles of songs
+     for(int i = 0; i < MAX_NUMBER_OF_SONGS; i++){
+        char *song_name = song_names[i];
+        ESP_LOGE(TAG, "[ SONG %d ]: %s", i, song_name);
+    }
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
@@ -137,7 +184,7 @@ void init_sd_card_player(void* pVParameters){
     rsp_handle = rsp_filter_init(&rsp_cfg);
 
     ESP_LOGI(TAG, "[4.4] Create fatfs stream to read data from sdcard");
-    char *url = NULL;
+    url = NULL;
     sdcard_list_current(sdcard_list_handle, &url);
     fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
     fatfs_cfg.type = AUDIO_STREAM_READER;

@@ -1,6 +1,7 @@
 #include "menu.h"
+#include "sd_card_player.h"
 
-
+char* song_names[MAX_NUMBER_OF_SONGS];
 
 static i2c_dev_t pcf8574;
 
@@ -59,6 +60,29 @@ void input_menu()
     }
 }
 
+
+
+
+/* 
+* Functie: format_song_name 
+* Beschrijving: Formaat het nummer, zodat het binnen het scherm van de LCD-past. 
+* Parameters: Het nummer dat geformaat moet worden.
+* Retourneert: de formatted song die binnen het scherm van de LCD-past. 
+*/ 
+
+const char *format_song_name(char *song_name)
+{
+    char *formatted_name = (char *)malloc(15);
+    
+    if (formatted_name != NULL) {
+        strncpy(formatted_name, song_name, 14);
+        formatted_name[14] = '\0';  // Null-terminator
+    }
+
+    return formatted_name;
+}
+
+
 void song_selection_menu(song songs[], size_t size)
 {
     hd44780_clear(&lcd);
@@ -67,7 +91,7 @@ void song_selection_menu(song songs[], size_t size)
 
     char song_count[20];
 
-    sprintf(song_count, "%d/%d", songs[0].id, size);
+    sprintf(song_count, "%d/%d", songs[0].id, MAX_NUMBER_OF_SONGS);
 
     hd44780_gotoxy(&lcd, 15, 0);
     hd44780_puts(&lcd, song_count);
@@ -76,13 +100,15 @@ void song_selection_menu(song songs[], size_t size)
     hd44780_puts(&lcd, "SONG:");
 
     hd44780_gotoxy(&lcd, 6, 1);
-    hd44780_puts(&lcd, songs[0].song_name);
+    char* song_name_1 = format_song_name(song_names[0]);
+    hd44780_puts(&lcd, song_name_1);
 
     hd44780_gotoxy(&lcd, 0, 2);
     hd44780_puts(&lcd, "NEXT: ");
 
     hd44780_gotoxy(&lcd, 6, 2);
-    hd44780_puts(&lcd, songs[1].song_name);
+    char* song_name_2 = format_song_name(song_names[2]);
+    hd44780_puts(&lcd, song_name_2);
 
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
