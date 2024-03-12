@@ -126,4 +126,6 @@ void init_lcd(void *pvParameters)
     // todo replace with songs from sd card or api
 
     main_menu();
+
+    vTaskDelete(NULL);
 }

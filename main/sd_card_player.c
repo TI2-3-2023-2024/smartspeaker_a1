@@ -84,7 +84,7 @@ void sdcard_url_save_cb(void *user_data, char *url)
     }
 }
 
-void init_sd_card_player(){
+void init_sd_card_player(void* pVParameters){
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
@@ -238,4 +238,6 @@ void init_sd_card_player(){
     audio_element_deinit(rsp_handle);
     periph_service_destroy(input_ser);
     esp_periph_set_destroy(set);
+
+    vTaskDelete(NULL);
 }

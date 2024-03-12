@@ -29,4 +29,4 @@
 
 static const char *TAG = "SDCARD_MP3_CONTROL_EXAMPLE";
 
-void init_sd_card_player();
+void init_sd_card_player(void *pvParameters);
