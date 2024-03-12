@@ -1,6 +1,0 @@
-source "C:/esp/v4.4/esp-idf/components/app_update/Kconfig.projbuild"
-source "C:/esp/v4.4/esp-idf/components/bootloader/Kconfig.projbuild"
-source "C:/esp/v4.4/esp-idf/components/esp_rom/Kconfig.projbuild"
-source "C:/esp/v4.4/esp-idf/components/esptool_py/Kconfig.projbuild"
-source "C:/esp/v4.4/esp-idf/components/partition_table/Kconfig.projbuild"
-source "C:/Users/teunl/Documents/school/Jaar-2/Periode-3/Project/Product/smartspeaker_a1/main/Kconfig.projbuild"

@@ -9,27 +9,43 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 
 
 #include "menu.h"
+#include "lib\ntp.h"
+#include "lib\wifi_setup.h"
 #include "i2c_display.h"
 #include "lib\buttonreader.h"
 
 
 void app_main()
-{
-    // ESP_ERROR_CHECK(i2c_master_init());
-    // ESP_LOGI(TAG, "I2C initialized successfully");
+{   
+    // Start Wi-Fi setup
+    wifi_setup_start();
+
+    char time_str[64];
+    ESP_LOGI("main", "Initializing NTP...");
+    ntp_initialize();
+    ESP_LOGI("main", "NTP initialized.");
+    
+
+    ESP_ERROR_CHECK(i2c_master_init());
+    ESP_LOGI(TAG, "I2C initialized successfully");
+
+    ESP_LOGI("main", "Getting current time...");
+    ntp_get_time(time_str, sizeof(time_str));
+    ESP_LOGI("main", "Current time is: %s", time_str);
 
     // //test data
     // ESP_ERROR_CHECK(write_coordinates(7, 5));
     // ESP_ERROR_CHECK(write_coordinates(0, 5));
     // ESP_ERROR_CHECK(write_coordinates(31, 5));
 
-    // ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
-    // ESP_LOGI(TAG, "I2C unitialized successfully");
+    ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
+    ESP_LOGI(TAG, "I2C unitialized successfully");
 
-    // ESP_ERROR_CHECK(i2cdev_init());
-
+    ESP_ERROR_CHECK(i2cdev_init());
+    
     //init lcd and start main menu
-    // xTaskCreate(init_lcd, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
+    xTaskCreate(init_lcd, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
+    
 
-    xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+    //xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
 }
