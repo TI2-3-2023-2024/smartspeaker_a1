@@ -18,12 +18,25 @@ typedef struct
 
 typedef struct
 {
+    int id;
+    char *radio_name;
+    char *url;
+} radio_station;
+
+typedef struct
+{
   void (*set_lcd_text)(); 
+
+  void (*button1)(); 
+  void (*button2)(); 
+  void (*button3)(); 
+  void (*button4)(); 
 } menu_page;
 
 void input_menu();
 void main_menu();
 void song_selection_menu(song songs[], size_t size);
+void radio_selection_menu(radio_station stations[]);
 
 void init_lcd();
 void getButtonValue();

@@ -1,13 +1,12 @@
 #include "buttonreader.h"
 #include "sharedvariable.h" 
+#include "menu.h"
 
 
 static const char* TAG = "IO Expander";
 static mcp23x17_t dev; //handle for i2c
 
-uint16_t buttonValue = 0;
-
-
+uint16_t button_value = 0;
 
 //button masks to set pins buttons are wired to
 const int BUTTON_MASK = 0x7f; //0b01111111 
@@ -75,14 +74,15 @@ void buttonreader_init()
 */
 void start_reader(){
     buttonreader_init();
+
+    //start task for reading the button value for the main menu
+    xTaskCreate(getButtonValue, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
     while(1)
     {
         xSemaphoreTake ( xMutex, portMAX_DELAY);
  
-        buttonValue = read_button(NULL);
-        // if(buttonValue != 0){
-        //     vTaskDelay(pdMS_TO_TICKS(1000));
-        // }
+        button_value = read_button(NULL);
+
         xSemaphoreGive (xMutex);
         vTaskDelay(pdMS_TO_TICKS(50));
     }

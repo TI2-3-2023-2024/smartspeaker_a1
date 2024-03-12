@@ -37,7 +37,6 @@ void app_main()
     if (xMutex != NULL){
       
          xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
-         xTaskCreate(getButtonValue, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
     }
 
 }
