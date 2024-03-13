@@ -7,12 +7,10 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 
 #include <inttypes.h>
 
-
 #include "menu.h"
 #include "i2c_display.h"
 #include "lib\buttonreader.h"
 #include "sharedvariable.h"
-
 #include "internet_radio.h"
 
 SemaphoreHandle_t xMutex;
@@ -22,7 +20,7 @@ void app_main()
     xMutex = xSemaphoreCreateMutex();
 
     ESP_ERROR_CHECK(i2cdev_init());
-    
+
     ESP_ERROR_CHECK(i2c_master_init());
     ESP_LOGI(TAG, "I2C initialized successfully");
 
@@ -34,13 +32,12 @@ void app_main()
     // ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
     ESP_LOGI(TAG, "I2C unitialized successfully");
 
+    // init lcd and start main menu
 
-    //init lcd and start main menu
+    if (xMutex != NULL)
+    {
 
-    if (xMutex != NULL){
-      
+        // xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, "http://185.66.249.48:8006/stream?type=.mp3", 5, NULL);
          xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
-         xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
     }
-
 }

@@ -1,3 +1,3 @@
 #pragma once
 
-void start_radio(void);
+void start_radio(void * url);

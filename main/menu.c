@@ -7,6 +7,7 @@ Beschrijving: code voor het tonen en navigeren van het menu op het lcd scherm
 
 #include "menu.h"
 #include "sharedvariable.h"
+#include "internet_radio.h"
 
 static i2c_dev_t pcf8574;
 
@@ -22,6 +23,9 @@ menu_page song_selection_page;
 menu_page radio_selection_page;
 menu_page song_play_page;
 menu_page radio_play_page;
+
+radio_station selected_station;
+radio_station *stations;
 
 static const uint8_t char_data[] = {
     0x04, 0x0e, 0x0e, 0x0e, 0x1f, 0x00, 0x04, 0x00,
@@ -66,16 +70,20 @@ void input_menu()
 void radio_page_init(){
      current_page = radio_selection_page;
 
-    radio_station stations[3] = {
-    {1, "Sunrise", NULL},
-    {2, "Sjekkie FM", NULL},
-    {3, "UVB-76", NULL}};
+    radio_station stations_init[3] = {
+    {1, "Sunrise", "http://185.66.249.48:8006/stream?type=.mp3"},
+    {2, "Jumbo FM", "https://playerservices.streamtheworld.com/api/livestream-redirect/JUMBORADIO.mp3"},
+    {3, "Slam FM", "https://stream.slam.nl/web10_mp3"}};
+
+    stations = stations_init;
 
     radio_selection_menu(stations);
 }
 
 void radio_selection_menu(radio_station stations[])
 {
+    selected_station = stations[0];
+
     hd44780_clear(&lcd);
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, "SELECT RADIO STATION");
@@ -94,6 +102,8 @@ void radio_selection_menu(radio_station stations[])
 
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
+
+    selected_station = stations[0];
 }
 
 /*
@@ -163,6 +173,8 @@ void radio_play_menu()
     hd44780_puts(&lcd, "PLAYING RADIO");
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | X | X | x");
+
+    xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, "http://185.66.249.48:8006/stream?type=.mp3", 5, NULL);
 }
 
 /*
