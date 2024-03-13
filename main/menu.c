@@ -1,7 +1,8 @@
 #include "menu.h"
 #include "sd_card_player.h"
 
-char* song_names[MAX_NUMBER_OF_SONGS];
+char** song_names;
+int playlist_size;
 
 static i2c_dev_t pcf8574;
 
@@ -91,7 +92,7 @@ void song_selection_menu(song songs[], size_t size)
 
     char song_count[20];
 
-    sprintf(song_count, "%d/%d", songs[0].id, MAX_NUMBER_OF_SONGS);
+    sprintf(song_count, "%d/%d", songs[0].id, playlist_size);
 
     hd44780_gotoxy(&lcd, 15, 0);
     hd44780_puts(&lcd, song_count);
@@ -100,14 +101,14 @@ void song_selection_menu(song songs[], size_t size)
     hd44780_puts(&lcd, "SONG:");
 
     hd44780_gotoxy(&lcd, 6, 1);
-    char* song_name_1 = format_song_name(song_names[0]);
+    char* song_name_1 = format_song_name(song_names[4]);
     hd44780_puts(&lcd, song_name_1);
 
     hd44780_gotoxy(&lcd, 0, 2);
     hd44780_puts(&lcd, "NEXT: ");
 
     hd44780_gotoxy(&lcd, 6, 2);
-    char* song_name_2 = format_song_name(song_names[2]);
+    char* song_name_2 = format_song_name(song_names[5]);
     hd44780_puts(&lcd, song_name_2);
 
     hd44780_gotoxy(&lcd, 0, 3);

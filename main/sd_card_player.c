@@ -122,10 +122,24 @@ void init_sd_card_player(void* pVParameters){
     sdcard_list_create(&sdcard_list_handle);
     sdcard_scan(sdcard_url_save_cb, "/sdcard/songs", 0, (const char *[]) {"mp3"}, 1, sdcard_list_handle);
 
-    ESP_LOGI(TAG, "[1.4] PRINTING ALL THE SONGS");
+    ESP_LOGI(TAG, "[1.3] PRINTING ALL THE SONGS");
     char *url = NULL;
 
-    for(int i = 0; i < MAX_NUMBER_OF_SONGS; i++){
+    playlist_operation_t operation;
+    playlist_handle_t playlist = sdcard_list_handle->playlist;
+
+    esp_err_t err = sdcard_list_handle->get_operation(&operation);
+    if (err != ESP_OK) {
+     ESP_LOGE(TAG, "Failed to get playlist operation");
+       
+    }
+
+    playlist_size = sdcard_list_get_url_num(&playlist);
+    song_names = (char **)malloc(playlist_size * sizeof(char *));
+
+    ESP_LOGI(TAG, "[1.4.1] URL COUNT %d", playlist_size);
+
+    for(int i = 0; i < playlist_size; i++){
         if (i == 0){
             sdcard_list_current(sdcard_list_handle, &url); // url is default NULL, so song 1 on the SD card needs to be included as well
         }
@@ -143,7 +157,7 @@ void init_sd_card_player(void* pVParameters){
     }
 
     // For-loop to check if the song array is filled it with titles of songs
-     for(int i = 0; i < MAX_NUMBER_OF_SONGS; i++){
+        for(int i = 0; i < playlist_size; i++){
         char *song_name = song_names[i];
         ESP_LOGE(TAG, "[ SONG %d ]: %s", i, song_name);
     }

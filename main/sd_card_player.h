@@ -27,10 +27,10 @@
 #include "sdcard_list.h"
 #include "sdcard_scan.h"
 
-#define MAX_NUMBER_OF_SONGS 5
-
 static const char *TAG = "SDCARD_MP3_CONTROL_EXAMPLE";
 
-extern char* song_names[MAX_NUMBER_OF_SONGS];
+extern int playlist_size;
+
+extern char** song_names;
 
 void init_sd_card_player(void *pvParameters);
