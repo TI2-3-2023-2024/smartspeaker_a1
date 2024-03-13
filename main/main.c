@@ -22,15 +22,15 @@ SemaphoreHandle_t xMutex;
 void app_main()
 {
     // // Start Wi-Fi setup
-    // wifi_setup_start();
+    wifi_setup_start();
 
-    // char time_str[64];
-    // ESP_LOGI("main", "Initializing NTP...");
-    // ntp_initialize();
-    // ESP_LOGI("main", "NTP initialized.");
+    char time_str[64];
+    ESP_LOGI("main", "Initializing NTP...");
+    ntp_initialize();
+    ESP_LOGI("main", "NTP initialized.");
     
     // //test task voor de actuele tijd. 
-    // xTaskCreate(ntp_test, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
+    //xTaskCreate(ntp_test, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 
     xMutex = xSemaphoreCreateMutex();
 
@@ -44,8 +44,8 @@ void app_main()
     // ESP_ERROR_CHECK(write_coordinates(0, 5));
     // ESP_ERROR_CHECK(write_coordinates(31, 5));
 
-    // ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
-    ESP_LOGI(TAG, "I2C unitialized successfully");
+    //ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
+    // ESP_LOGI(TAG, "I2C unitialized successfully");
 
 
     //init lcd and start main menu
@@ -55,7 +55,7 @@ void app_main()
       
       printf("WTF MAAK AAN /n");
         //  xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
-         xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+        xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
     }
 
 }

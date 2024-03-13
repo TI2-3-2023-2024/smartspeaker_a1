@@ -12,6 +12,7 @@
 #include "periph_wifi.h"
 #include "nvs_flash.h"
 
+esp_periph_set_handle_t wifiPeriphSet;
 
 static const char *TAG = "WIFI_SETUP";
 
@@ -40,12 +41,12 @@ void wifi_setup_start() {
 
     ESP_LOGI(TAG, "Start and wait for Wi-Fi network");
     esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
-    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
+    wifiPeriphSet = esp_periph_set_init(&periph_cfg);
     periph_wifi_cfg_t wifi_cfg = {
         .wifi_config.sta.ssid = WIFI_SSID,
         .wifi_config.sta.password = WIFI_PASSWORD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(set, wifi_handle);
+    esp_periph_start(wifiPeriphSet, wifi_handle);
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
 }

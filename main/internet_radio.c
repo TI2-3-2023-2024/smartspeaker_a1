@@ -23,6 +23,8 @@
 #include "i2s_stream.h"
 #include "mp3_decoder.h"
 
+#include "lib/wifi_setup.h"
+
 #include "esp_peripherals.h"
 #include "periph_wifi.h"
 #include "board.h"
@@ -39,19 +41,19 @@ static const char *TAG = "HTTP_MP3_EXAMPLE";
 
 void start_radio(void)
 {
-    printf("\nIK START DE RADIO!!!\n");
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
-        // NVS partition was truncated and needs to be erased
-        // Retry nvs_flash_init
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
-    }
-#if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
-    ESP_ERROR_CHECK(esp_netif_init());
-#else
-    tcpip_adapter_init();
-#endif
+//     printf("\nIK START DE RADIO!!!\n");
+//     esp_err_t err = nvs_flash_init();
+//     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
+//         // NVS partition was truncated and needs to be erased
+//         // Retry nvs_flash_init
+//         ESP_ERROR_CHECK(nvs_flash_erase());
+//         err = nvs_flash_init();
+//     }
+// #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+//     ESP_ERROR_CHECK(esp_netif_init());
+// #else
+//     tcpip_adapter_init();
+// #endif
 
     audio_pipeline_handle_t pipeline;
     audio_element_handle_t http_stream_reader, i2s_stream_writer, mp3_decoder;
@@ -94,15 +96,20 @@ void start_radio(void)
     audio_element_set_uri(http_stream_reader, "https://playerservices.streamtheworld.com/api/livestream-redirect/JUMBORADIO.mp3");
 
     ESP_LOGI(TAG, "[ 3 ] Start and wait for Wi-Fi network");
-    esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
-    esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
-    periph_wifi_cfg_t wifi_cfg = {
-        .wifi_config.sta.ssid = CONFIG_WIFI_SSID,
-        .wifi_config.sta.password = CONFIG_WIFI_PASSWORD,
-    };
-    esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
-    esp_periph_start(set, wifi_handle);
-    periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
+
+    esp_periph_set_handle_t set = wifiPeriphSet;
+
+    // TODO: Hier onder heb ik de code nodig om de wifiPeriphSet op te halen uit die wifi_setup.c 
+
+    // esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
+    // esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
+    // periph_wifi_cfg_t wifi_cfg = {
+    //     .wifi_config.sta.ssid = CONFIG_WIFI_SSID,
+    //     .wifi_config.sta.password = CONFIG_WIFI_PASSWORD,
+    // };
+    // esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
+    // esp_periph_start(set, wifi_handle);
+    // periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
     
     // Example of using an audio event -- START
     ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
@@ -173,5 +180,5 @@ void start_radio(void)
     audio_element_deinit(http_stream_reader);
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(mp3_decoder);
-    esp_periph_set_destroy(set);
+    //esp_periph_set_destroy(set);
 }
