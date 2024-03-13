@@ -30,7 +30,7 @@ void app_main()
     ESP_LOGI("main", "NTP initialized.");
     
     // //test task voor de actuele tijd. 
-    //xTaskCreate(ntp_test, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
+    xTaskCreate(ntp_test, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 
     xMutex = xSemaphoreCreateMutex();
 
