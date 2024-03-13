@@ -25,7 +25,8 @@ menu_page song_play_page;
 menu_page radio_play_page;
 
 radio_station selected_station;
-radio_station *stations;
+radio_station stations[3];
+int station_index;
 
 static const uint8_t char_data[] = {
     0x04, 0x0e, 0x0e, 0x0e, 0x1f, 0x00, 0x04, 0x00,
@@ -70,12 +71,9 @@ void input_menu()
 void radio_page_init(){
      current_page = radio_selection_page;
 
-    radio_station stations_init[3] = {
-    {1, "Sunrise", "http://185.66.249.48:8006/stream?type=.mp3"},
-    {2, "Jumbo FM", "https://playerservices.streamtheworld.com/api/livestream-redirect/JUMBORADIO.mp3"},
-    {3, "Slam FM", "https://stream.slam.nl/web10_mp3"}};
-
-    stations = stations_init;
+    stations[0] = (radio_station){1, "Sunrise", "http://185.66.249.48:8006/stream?type=.mp3"};
+    stations[1] = (radio_station){2, "Jumbo FM", "https://playerservices.streamtheworld.com/api/livestream-redirect/JUMBORADIO.mp3"};
+    stations[2] = (radio_station){3, "Slam FM", "https://stream.slam.nl/web10_mp3"};
 
     radio_selection_menu(stations);
 }
@@ -83,6 +81,7 @@ void radio_page_init(){
 void radio_selection_menu(radio_station stations[])
 {
     selected_station = stations[0];
+    station_index = 0;
 
     hd44780_clear(&lcd);
     hd44780_gotoxy(&lcd, 0, 0);
@@ -104,6 +103,22 @@ void radio_selection_menu(radio_station stations[])
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
 
     selected_station = stations[0];
+}
+
+void select_next(){
+    if (station_index < (sizeof(stations) / sizeof(stations[0]))){
+        station_index++;
+        selected_station = stations[station_index];
+        printf(selected_station.radio_name);
+    }
+}
+
+void select_previous(){
+    if (station_index > 0){
+        station_index--;
+        selected_station = stations[station_index];
+         printf(selected_station.radio_name);
+    }
 }
 
 /*
@@ -174,7 +189,7 @@ void radio_play_menu()
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | X | X | x");
 
-    xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, "http://185.66.249.48:8006/stream?type=.mp3", 5, NULL);
+    xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, selected_station.url, 5, NULL);
 }
 
 /*
@@ -240,8 +255,8 @@ void initPages(){
 
     radio_selection_page.set_lcd_text = radio_selection_menu;
     radio_selection_page.button1 = radio_play_menu;
-    radio_selection_page.button2 = NULL;
-    radio_selection_page.button3 = NULL;
+    radio_selection_page.button2 = select_next;
+    radio_selection_page.button3 = select_previous;
     radio_selection_page.button4 = main_menu;
 
     radio_play_page.set_lcd_text = radio_play_menu;
