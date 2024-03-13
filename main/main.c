@@ -13,11 +13,28 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 #include "lib\buttonreader.h"
 #include "sharedvariable.h"
 
+#include "internet_radio.h"
+#include "lib/ntp.h"
+#include "lib/wifi_setup.h"
+
 SemaphoreHandle_t xMutex;
 
 void app_main()
 {
+    // // Start Wi-Fi setup
+    // wifi_setup_start();
+
+    // char time_str[64];
+    // ESP_LOGI("main", "Initializing NTP...");
+    // ntp_initialize();
+    // ESP_LOGI("main", "NTP initialized.");
+    
+    // //test task voor de actuele tijd. 
+    // xTaskCreate(ntp_test, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
+
     xMutex = xSemaphoreCreateMutex();
+
+    ESP_ERROR_CHECK(i2cdev_init());
     
     ESP_ERROR_CHECK(i2c_master_init());
     ESP_LOGI(TAG, "I2C initialized successfully");
@@ -27,16 +44,18 @@ void app_main()
     // ESP_ERROR_CHECK(write_coordinates(0, 5));
     // ESP_ERROR_CHECK(write_coordinates(31, 5));
 
-    ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
+    // ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
     ESP_LOGI(TAG, "I2C unitialized successfully");
 
-    ESP_ERROR_CHECK(i2cdev_init());
 
     //init lcd and start main menu
+    printf("ik ben hier /n/n");
 
     if (xMutex != NULL){
       
-         xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+      printf("WTF MAAK AAN /n");
+        //  xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+         xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
     }
 
 }

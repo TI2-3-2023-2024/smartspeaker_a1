@@ -1,25 +1,41 @@
-menu "Example configuration"
-    config EXAMPLE_I2C_ADDR
-        hex "I2C address of PCF8574"
-        default 0x27
+menu "Example Configuration"
 
-    config GPIO_EXPANDER_ADDR
-        hex "I2C address of MCP23017"
-        default 0x20
+config WIFI_SSID
+    string "WiFi SSID"
+	default "NielsMagNiet"
+	help
+		SSID (network name) for the example to connect to.
 
-    config EXAMPLE_I2C_MASTER_SCL
-        int "SCL GPIO Number"
-        default 5 if IDF_TARGET_ESP8266
-        default 6 if IDF_TARGET_ESP32C3
-        default 23 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
-        help
-            GPIO number for I2C Master clock line.
+config WIFI_PASSWORD
+    string "WiFi Password"
+    default "Banaan123"
+	help
+		WiFi password (WPA or WPA2) for the example to use.
 
-    config EXAMPLE_I2C_MASTER_SDA
-        int "SDA GPIO Number"
-        default 4 if IDF_TARGET_ESP8266
-        default 5 if IDF_TARGET_ESP32C3
-        default 18 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
-        help
-            GPIO number for I2C Master data line.
+		Can be left blank if the network has no security set.
+
+config EXAMPLE_I2C_ADDR
+	hex "I2C address of PCF8574"
+	default 0x27
+
+config GPIO_EXPANDER_ADDR
+	hex "I2C address of MCP23017"
+	default 0x20
+
+config EXAMPLE_I2C_MASTER_SCL
+	int "SCL GPIO Number"
+	default 5 if IDF_TARGET_ESP8266
+	default 6 if IDF_TARGET_ESP32C3
+	default 23 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+	help
+		GPIO number for I2C Master clock line.
+
+config EXAMPLE_I2C_MASTER_SDA
+	int "SDA GPIO Number"
+	default 4 if IDF_TARGET_ESP8266
+	default 5 if IDF_TARGET_ESP32C3
+	default 18 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+	help
+		GPIO number for I2C Master data line.
+	
 endmenu

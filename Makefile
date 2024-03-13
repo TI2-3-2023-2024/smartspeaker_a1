@@ -1,6 +1,3 @@
-#V := 1
-PROJECT_NAME := example-hd44780-i2c
+PROJECT_NAME := play_http_mp3
+include $(ADF_PATH)/project.mk
 
-EXTRA_COMPONENT_DIRS := $(CURDIR)/../../../components
-
-include $(IDF_PATH)/make/project.mk

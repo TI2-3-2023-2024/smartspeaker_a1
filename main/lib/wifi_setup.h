@@ -3,8 +3,8 @@
 
 #include "esp_wifi.h"
 
-#define WIFI_SSID "iPhone van luc (2)"
-#define WIFI_PASSWORD "password"
+#define WIFI_SSID "NielsMagNiet"
+#define WIFI_PASSWORD "Banaan123"
 
 void wifi_setup_start();
 
