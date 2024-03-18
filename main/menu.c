@@ -1,10 +1,11 @@
 /*
 Bestandsnaam: menu.c
-Auteur: Niels en Ruben
-Datum: 12-3-2024
+Auteur: Niels en Ruben en Luc
+Datum: 18-3-2024
 Beschrijving: code voor het tonen en navigeren van het menu op het lcd scherm
 */
 
+#include <time.h>
 #include "menu.h"
 #include "sharedvariable.h"
 #include "lib/internet_radio.h"
@@ -22,6 +23,7 @@ menu_page song_selection_page;
 menu_page radio_selection_page;
 menu_page song_play_page;
 menu_page radio_play_page;
+menu_page time_menu_page;
 
 radio_station selected_station;
 static radio_station stations[3];
@@ -36,6 +38,8 @@ static esp_err_t write_lcd_data(const hd44780_t *lcd, uint8_t data)
 {
     return pcf8574_port_write(&pcf8574, data);
 }
+
+TaskHandle_t time_update_task_handle = NULL;
 
 /*
  * Function: initialiseer de setting voor het LCD scherm
@@ -111,7 +115,10 @@ void main_menu()
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, "SELECT TYPE");
     hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "SD | RADIO | MIC | x");
+    hd44780_puts(&lcd, "SD | RADIO | MIC | T");
+    
+    // Delete time update task if it exists
+    deleteTimeUpdateTask();
 }
 
 void input_menu()
@@ -213,6 +220,25 @@ void song_selection_menu(song songs[], size_t size)
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
 }
 
+void time_menu() {
+    current_page = time_menu_page;
+    char time_str[64];
+    struct tm timeinfo;
+    time_t now;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    strftime(time_str, sizeof(time_str), "%H:%M:%S", &timeinfo);
+
+    hd44780_clear(&lcd);
+    hd44780_gotoxy(&lcd, 0, 0);
+    hd44780_puts(&lcd, time_str);
+    hd44780_gotoxy(&lcd, 0, 3);
+    hd44780_puts(&lcd, "BACK |  X  |  X  | X");
+
+    // Start time update task
+    startTimeUpdateTask();
+}
+
 void select_next()
 {
     if ((station_index + 1) < (sizeof(stations) / sizeof(stations[0])))
@@ -260,7 +286,7 @@ void initPages()
 {
 
     main_page.set_lcd_text = main_menu;
-    main_page.button1 = NULL;
+    main_page.button1 = time_menu;
     main_page.button2 = input_menu;
     main_page.button3 = radio_page_init;
     main_page.button4 = song_page_init;
@@ -294,9 +320,68 @@ void initPages()
     song_play_page.button2 = NULL;
     song_play_page.button3 = NULL;
     song_play_page.button4 = song_page_init;
+    
+    time_menu_page.set_lcd_text = time_menu;
+    time_menu_page.button1 = NULL;
+    time_menu_page.button2 = NULL;
+    time_menu_page.button3 = NULL;
+    time_menu_page.button4 = main_menu;
 
     current_page = main_page;
     current_page.set_lcd_text();
+}
+
+/*
+ * Function: Overschrijft de eerste regel op het Time_menu scherm. 
+ * Parameters: None
+ * Returns: None
+ */
+void update_time_display() {
+    char time_str[64];
+    struct tm timeinfo;
+    time_t now;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    strftime(time_str, sizeof(time_str), "%H:%M:%S", &timeinfo);
+    
+    hd44780_gotoxy(&lcd, 0, 0);
+    hd44780_puts(&lcd, time_str);
+}
+
+/*
+ * Function: Task voor het per seconde updaten van het time_menu
+ * Parameters: None
+ * Returns: None
+ */
+void updateTimeTask(void *parameters) {
+    while(1) {
+        // Update time display
+        time_menu();
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
+    }
+}
+
+/*
+ * Function: start de time update task
+ * Parameters: None
+ * Returns: None
+ */
+void startTimeUpdateTask() {
+    if (time_update_task_handle == NULL) {
+        xTaskCreate(updateTimeTask, "TimeUpdateTask", configMINIMAL_STACK_SIZE * 6, NULL, 5, &time_update_task_handle);
+    }
+}
+
+/*
+ * Function: Verwijderd de timeUpdateTask wanneer deze niet meer nodig is 
+ * Parameters: None
+ * Returns: None
+ */
+void deleteTimeUpdateTask() {
+    if (time_update_task_handle != NULL) {
+        vTaskDelete(time_update_task_handle);
+        time_update_task_handle = NULL;
+    }
 }
 
 uint16_t previous_value = -1;
