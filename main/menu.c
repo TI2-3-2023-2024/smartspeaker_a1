@@ -108,7 +108,7 @@ void radio_selection_menu()
 
 void select_next()
 {
-    if (station_index < (sizeof(stations) / sizeof(stations[0])))
+    if ((station_index + 1) < (sizeof(stations) / sizeof(stations[0])))
     {
         station_index++;
         // selected_station = stations[station_index];

@@ -9,7 +9,7 @@ static mcp23x17_t dev; //handle for i2c
 uint16_t button_value = 0;
 
 //button masks to set pins buttons are wired to
-const int BUTTON_MASK = 0x7f; //0b01111111 
+const int BUTTON_MASK = 0x0f; //0b00001111 
 
 /*
 * Function: Prints value in binary format; Used when debugging
