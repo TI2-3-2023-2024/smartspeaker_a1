@@ -376,6 +376,11 @@ void getButtonValue(void *parameters)
     }
 }
 
+/*
+ * Function: Overschrijft de eerste regel op het Time_menu scherm. 
+ * Parameters: None
+ * Returns: None
+ */
 void update_time_display() {
     char time_str[64];
     struct tm timeinfo;
@@ -388,6 +393,11 @@ void update_time_display() {
     hd44780_puts(&lcd, time_str);
 }
 
+/*
+ * Function: Task voor het per seconde updaten van het time_menu
+ * Parameters: None
+ * Returns: None
+ */
 void updateTimeTask(void *parameters) {
     while(1) {
         // Update time display
@@ -396,13 +406,22 @@ void updateTimeTask(void *parameters) {
     }
 }
 
-// Function to start time update task
+/*
+ * Function: start de time update task
+ * Parameters: None
+ * Returns: None
+ */
 void startTimeUpdateTask() {
     if (time_update_task_handle == NULL) {
         xTaskCreate(updateTimeTask, "TimeUpdateTask", configMINIMAL_STACK_SIZE * 6, NULL, 5, &time_update_task_handle);
     }
 }
 
+/*
+ * Function: Verwijderd de timeUpdateTask wanneer deze niet meer nodig is 
+ * Parameters: None
+ * Returns: None
+ */
 void deleteTimeUpdateTask() {
     if (time_update_task_handle != NULL) {
         vTaskDelete(time_update_task_handle);
