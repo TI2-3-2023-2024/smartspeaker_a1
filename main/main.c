@@ -16,6 +16,7 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 #include "lib/internet_radio.h"
 #include "lib/ntp.h"
 #include "lib/wifi_setup.h"
+#include "lib/sd_card_player.h"
 
 SemaphoreHandle_t xMutex;
 
@@ -55,6 +56,7 @@ void app_main()
       
  
         xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+        // xTaskCreate(init_sd_card_player, "init_sd_card_player", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
         
     }
 

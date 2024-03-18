@@ -9,6 +9,7 @@ Beschrijving: code voor het tonen en navigeren van het menu op het lcd scherm
 #include "menu.h"
 #include "sharedvariable.h"
 #include "lib/internet_radio.h"
+#include "lib/sd_card_player.h"
 
 static i2c_dev_t pcf8574;
 
@@ -25,10 +26,15 @@ menu_page song_play_page;
 menu_page radio_play_page;
 menu_page time_menu_page;
 
+char **song_names;
+int playlist_size;
+
 radio_station selected_station;
 static radio_station stations[3];
+static song *songs;
 static int station_index = 0;
 TaskHandle_t radio_task_handle;
+TaskHandle_t sd_task_handle;
 
 static const uint8_t char_data[] = {
     0x04, 0x0e, 0x0e, 0x0e, 0x1f, 0x00, 0x04, 0x00,
@@ -97,14 +103,18 @@ void song_page_init()
 {
     current_page = song_selection_page;
 
-    song songs[3] = {
-        {1, "brood"},
-        {2, "plankje"},
-        {3, "knakworst"}};
+    free(songs);
 
-    size_t num_songs = sizeof(songs) / sizeof(songs[0]);
+    char **song_names = read_from_sd();
 
-    song_selection_menu(songs, num_songs);
+    songs = (song *)malloc(playlist_size * sizeof(song));
+
+    for (int i = 0; i < playlist_size; i++)
+    {
+        songs[i] = (song){i, song_names[i]};
+    }
+
+    song_selection_menu();
 }
 
 void main_menu()
@@ -116,7 +126,7 @@ void main_menu()
     hd44780_puts(&lcd, "SELECT TYPE");
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "SD | RADIO | MIC | T");
-    
+
     // Delete time update task if it exists
     deleteTimeUpdateTask();
 }
@@ -174,6 +184,8 @@ void song_play_menu()
     hd44780_puts(&lcd, "PLAYING SONG");
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | X | X | x");
+
+    xTaskCreate(init_sd_card_player, "init_sd_card_player", configMINIMAL_STACK_SIZE * 6, NULL, 5, &sd_task_handle);
 }
 
 void radio_play_menu()
@@ -191,7 +203,7 @@ void radio_play_menu()
     xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, selected_station.url, 5, &radio_task_handle);
 }
 
-void song_selection_menu(song songs[], size_t size)
+void song_selection_menu()
 {
     hd44780_clear(&lcd);
     hd44780_gotoxy(&lcd, 0, 0);
@@ -199,7 +211,7 @@ void song_selection_menu(song songs[], size_t size)
 
     char song_count[20];
 
-    sprintf(song_count, "%d/%d", songs[0].id, size);
+    sprintf(song_count, "%d/%d", songs[0].id, playlist_size);
 
     hd44780_gotoxy(&lcd, 15, 0);
     hd44780_puts(&lcd, song_count);
@@ -208,19 +220,22 @@ void song_selection_menu(song songs[], size_t size)
     hd44780_puts(&lcd, "SONG:");
 
     hd44780_gotoxy(&lcd, 6, 1);
-    hd44780_puts(&lcd, songs[0].song_name);
+    char *song_name_1 = format_song_name(songs[0].song_name);
+    hd44780_puts(&lcd, song_name_1);
 
     hd44780_gotoxy(&lcd, 0, 2);
     hd44780_puts(&lcd, "NEXT: ");
 
     hd44780_gotoxy(&lcd, 6, 2);
-    hd44780_puts(&lcd, songs[1].song_name);
+    char *song_name_2 = format_song_name(songs[1].song_name);
+    hd44780_puts(&lcd, song_name_2);
 
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
 }
 
-void time_menu() {
+void time_menu()
+{
     current_page = time_menu_page;
     char time_str[64];
     struct tm timeinfo;
@@ -269,12 +284,44 @@ void select_previous()
 
 void disconnect_radio()
 {
-    //delete task
+    // delete task
     vTaskDelete(radio_task_handle);
-    
+
     stop_audio_pipeline();
 
     radio_selection_menu();
+}
+
+void disconnect_sd()
+{
+    vTaskDelete(sd_task_handle);
+
+    stop_sd_audio_pipeline();
+
+    song_page_init();
+}
+
+void song_to_main(){
+    stop_sd_audio_pipeline();
+    main_menu();
+}
+
+/* 
+Functie: format_song_name
+Beschrijving: Formaat het nummer, zodat het binnen het scherm van de LCD-past.
+Parameters: Het nummer dat geformaat moet worden.
+Retourneert: de formatted song die binnen het scherm van de LCD-past.
+*/
+const char *format_song_name(char *song_name)
+{
+    char *formatted_name = (char *)malloc(15);
+    
+    if (formatted_name != NULL) {
+        strncpy(formatted_name, song_name, 14);
+        formatted_name[14] = '\0';  // Null-terminator
+    }
+
+    return formatted_name;
 }
 
 /*
@@ -301,7 +348,7 @@ void initPages()
     song_selection_page.button1 = song_play_menu;
     song_selection_page.button2 = NULL;
     song_selection_page.button3 = NULL;
-    song_selection_page.button4 = main_menu;
+    song_selection_page.button4 = song_to_main;
 
     radio_selection_page.set_lcd_text = radio_selection_menu;
     radio_selection_page.button1 = radio_play_menu;
@@ -319,8 +366,8 @@ void initPages()
     song_play_page.button1 = NULL;
     song_play_page.button2 = NULL;
     song_play_page.button3 = NULL;
-    song_play_page.button4 = song_page_init;
-    
+    song_play_page.button4 = disconnect_sd;
+
     time_menu_page.set_lcd_text = time_menu;
     time_menu_page.button1 = NULL;
     time_menu_page.button2 = NULL;
@@ -332,18 +379,19 @@ void initPages()
 }
 
 /*
- * Function: Overschrijft de eerste regel op het Time_menu scherm. 
+ * Function: Overschrijft de eerste regel op het Time_menu scherm.
  * Parameters: None
  * Returns: None
  */
-void update_time_display() {
+void update_time_display()
+{
     char time_str[64];
     struct tm timeinfo;
     time_t now;
     time(&now);
     localtime_r(&now, &timeinfo);
     strftime(time_str, sizeof(time_str), "%H:%M:%S", &timeinfo);
-    
+
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, time_str);
 }
@@ -353,8 +401,10 @@ void update_time_display() {
  * Parameters: None
  * Returns: None
  */
-void updateTimeTask(void *parameters) {
-    while(1) {
+void updateTimeTask(void *parameters)
+{
+    while (1)
+    {
         // Update time display
         time_menu();
         vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
@@ -366,19 +416,23 @@ void updateTimeTask(void *parameters) {
  * Parameters: None
  * Returns: None
  */
-void startTimeUpdateTask() {
-    if (time_update_task_handle == NULL) {
+void startTimeUpdateTask()
+{
+    if (time_update_task_handle == NULL)
+    {
         xTaskCreate(updateTimeTask, "TimeUpdateTask", configMINIMAL_STACK_SIZE * 6, NULL, 5, &time_update_task_handle);
     }
 }
 
 /*
- * Function: Verwijderd de timeUpdateTask wanneer deze niet meer nodig is 
+ * Function: Verwijderd de timeUpdateTask wanneer deze niet meer nodig is
  * Parameters: None
  * Returns: None
  */
-void deleteTimeUpdateTask() {
-    if (time_update_task_handle != NULL) {
+void deleteTimeUpdateTask()
+{
+    if (time_update_task_handle != NULL)
+    {
         vTaskDelete(time_update_task_handle);
         time_update_task_handle = NULL;
     }

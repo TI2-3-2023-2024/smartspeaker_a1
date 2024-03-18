@@ -35,7 +35,7 @@ typedef struct
 
 void input_menu();
 void main_menu();
-void song_selection_menu(song songs[], size_t size);
+void song_selection_menu();
 void radio_selection_menu();
 void update_time_display();
 void updateTimeTask(void *parameters);
@@ -44,3 +44,4 @@ void deleteTimeUpdateTask();
 
 void init_lcd();
 void getButtonValue();
+const char *format_song_name(char *song_name);
