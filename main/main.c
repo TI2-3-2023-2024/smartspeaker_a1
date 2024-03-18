@@ -30,7 +30,7 @@ void app_main()
     ESP_LOGI("main", "NTP initialized.");
     
     // //test task voor de actuele tijd. 
-    xTaskCreate(ntp_test, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
+    // xTaskCreate(ntp_test, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 
     xMutex = xSemaphoreCreateMutex();
 
@@ -44,7 +44,7 @@ void app_main()
     // ESP_ERROR_CHECK(write_coordinates(0, 5));
     // ESP_ERROR_CHECK(write_coordinates(31, 5));
 
-    //ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
+    // ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
     // ESP_LOGI(TAG, "I2C unitialized successfully");
 
 

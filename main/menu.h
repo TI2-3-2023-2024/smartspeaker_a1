@@ -37,6 +37,9 @@ void input_menu();
 void main_menu();
 void song_selection_menu(song songs[], size_t size);
 void radio_selection_menu();
-
+void update_time_display();
+void updateTimeTask(void *parameters);
+void startTimeUpdateTask();
+void deleteTimeUpdateTask();
 void init_lcd();
 void getButtonValue();
