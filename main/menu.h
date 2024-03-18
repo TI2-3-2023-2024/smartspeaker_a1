@@ -42,5 +42,9 @@ void updateTimeTask(void *parameters);
 void startTimeUpdateTask();
 void deleteTimeUpdateTask();
 
+void time_menu_button1_handler();
+void time_menu_button2_handler();
+void time_menu_button3_handler();
+
 void init_lcd();
 void getButtonValue();

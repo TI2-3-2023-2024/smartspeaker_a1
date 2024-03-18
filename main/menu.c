@@ -25,6 +25,10 @@ menu_page song_play_page;
 menu_page radio_play_page;
 menu_page time_menu_page;
 
+const char *day_format = "%H:%M:%S";
+const char *day_month_year_format = "%d %b %Y %H:%M";
+const char *full_format = "%A, %d %m %Y  %H:%M:%S";
+
 radio_station selected_station;
 static radio_station stations[3];
 static int station_index = 0;
@@ -220,23 +224,24 @@ void song_selection_menu(song songs[], size_t size)
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
 }
 
-void time_menu() {
+void time_menu(const char* Format) {
+    deleteTimeUpdateTask();
     current_page = time_menu_page;
     char time_str[64];
     struct tm timeinfo;
     time_t now;
     time(&now);
     localtime_r(&now, &timeinfo);
-    strftime(time_str, sizeof(time_str), "%H:%M:%S", &timeinfo);
+    strftime(time_str, sizeof(time_str), Format, &timeinfo);
 
     hd44780_clear(&lcd);
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, time_str);
     hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK |  X  |  X  | X");
+    hd44780_puts(&lcd, "BACK|  R  | DMY | F");
 
     // Start time update task
-    startTimeUpdateTask();
+    startTimeUpdateTask(Format);
 }
 
 void select_next()
@@ -284,9 +289,8 @@ void disconnect_radio()
  */
 void initPages()
 {
-
     main_page.set_lcd_text = main_menu;
-    main_page.button1 = time_menu;
+    main_page.button1 = time_menu_button1_handler;
     main_page.button2 = input_menu;
     main_page.button3 = radio_page_init;
     main_page.button4 = song_page_init;
@@ -322,9 +326,9 @@ void initPages()
     song_play_page.button4 = song_page_init;
     
     time_menu_page.set_lcd_text = time_menu;
-    time_menu_page.button1 = NULL;
-    time_menu_page.button2 = NULL;
-    time_menu_page.button3 = NULL;
+    time_menu_page.button1 = time_menu_button3_handler;
+    time_menu_page.button2 = time_menu_button2_handler;
+    time_menu_page.button3 = time_menu_button1_handler;
     time_menu_page.button4 = main_menu;
 
     current_page = main_page;
@@ -332,45 +336,65 @@ void initPages()
 }
 
 /*
+ * Function: deze drie methodes zijn de button handlers voor de verschillende tijd formatten 
+ * Parameters: None
+ * Returns: None
+ */
+void time_menu_button1_handler() {
+    time_menu(day_format);
+}
+void time_menu_button2_handler() {
+    time_menu(day_month_year_format);
+}
+void time_menu_button3_handler() {
+    time_menu(full_format);
+}
+    
+
+/*
  * Function: Overschrijft de eerste regel op het Time_menu scherm. 
  * Parameters: None
  * Returns: None
  */
-void update_time_display() {
+void update_time_display(const char *Format) {
     char time_str[64];
     struct tm timeinfo;
     time_t now;
     time(&now);
     localtime_r(&now, &timeinfo);
-    strftime(time_str, sizeof(time_str), "%H:%M:%S", &timeinfo);
+    strftime(time_str, sizeof(time_str), Format, &timeinfo);
     
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, time_str);
 }
 
 /*
- * Function: Task voor het per seconde updaten van het time_menu
+ * Function: Task for updating the time display every second
  * Parameters: None
  * Returns: None
  */
-void updateTimeTask(void *parameters) {
-    while(1) {
+void updateTimeTask(void *Format) {
+    const char *time_format = (const char *)Format;
+    
+    while (1) {
         // Update time display
-        time_menu();
+        update_time_display(time_format);
         vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
     }
 }
+
 
 /*
  * Function: start de time update task
  * Parameters: None
  * Returns: None
  */
-void startTimeUpdateTask() {
+void startTimeUpdateTask(const char *Format) {
     if (time_update_task_handle == NULL) {
-        xTaskCreate(updateTimeTask, "TimeUpdateTask", configMINIMAL_STACK_SIZE * 6, NULL, 5, &time_update_task_handle);
+        xTaskCreate(updateTimeTask, "TimeUpdateTask", configMINIMAL_STACK_SIZE * 6, (void *)Format, 5, &time_update_task_handle);
     }
 }
+
 
 /*
  * Function: Verwijderd de timeUpdateTask wanneer deze niet meer nodig is 
