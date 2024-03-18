@@ -132,6 +132,8 @@ void disconnect_radio()
 {
     //delete task
     vTaskDelete(radio_task_handle);
+    
+    stop_audio_pipeline();
 
     radio_selection_menu();
 }

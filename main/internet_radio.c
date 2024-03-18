@@ -39,24 +39,27 @@
 
 static const char *TAG = "HTTP_MP3_EXAMPLE";
 
-void start_radio(void * url)
-{
-//     printf("\nIK START DE RADIO!!!\n");
-//     esp_err_t err = nvs_flash_init();
-//     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
-//         // NVS partition was truncated and needs to be erased
-//         // Retry nvs_flash_init
-//         ESP_ERROR_CHECK(nvs_flash_erase());
-//         err = nvs_flash_init();
-//     }
-// #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
-//     ESP_ERROR_CHECK(esp_netif_init());
-// #else
-//     tcpip_adapter_init();
-// #endif
+audio_pipeline_handle_t pipeline;
+audio_element_handle_t http_stream_reader, i2s_stream_writer, mp3_decoder;
+esp_periph_set_handle_t set;
+audio_event_iface_handle_t evt;
 
-    audio_pipeline_handle_t pipeline;
-    audio_element_handle_t http_stream_reader, i2s_stream_writer, mp3_decoder;
+    void
+    start_radio(void *url)
+{
+    //     printf("\nIK START DE RADIO!!!\n");
+    //     esp_err_t err = nvs_flash_init();
+    //     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
+    //         // NVS partition was truncated and needs to be erased
+    //         // Retry nvs_flash_init
+    //         ESP_ERROR_CHECK(nvs_flash_erase());
+    //         err = nvs_flash_init();
+    //     }
+    // #if (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0))
+    //     ESP_ERROR_CHECK(esp_netif_init());
+    // #else
+    //     tcpip_adapter_init();
+    // #endif
 
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
@@ -85,22 +88,22 @@ void start_radio(void * url)
 
     ESP_LOGI(TAG, "[2.4] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, http_stream_reader, "http");
-    audio_pipeline_register(pipeline, mp3_decoder,        "mp3");
-    audio_pipeline_register(pipeline, i2s_stream_writer,  "i2s");
+    audio_pipeline_register(pipeline, mp3_decoder, "mp3");
+    audio_pipeline_register(pipeline, i2s_stream_writer, "i2s");
 
     ESP_LOGI(TAG, "[2.5] Link it together http_stream-->mp3_decoder-->i2s_stream-->[codec_chip]");
     const char *link_tag[3] = {"http", "mp3", "i2s"};
     audio_pipeline_link(pipeline, &link_tag[0], 3);
 
     ESP_LOGI(TAG, "[2.6] Set up  uri (http as http_stream, mp3 as mp3 decoder, and default output is i2s)");
-    audio_element_set_uri(http_stream_reader, (char*)url);
+    audio_element_set_uri(http_stream_reader, (char *)url);
     printf((url));
-    
+
     ESP_LOGI(TAG, "[ 3 ] Start and wait for Wi-Fi network");
 
-    esp_periph_set_handle_t set = wifiPeriphSet;
+    set = wifiPeriphSet;
 
-    // TODO: Hier onder heb ik de code nodig om de wifiPeriphSet op te halen uit die wifi_setup.c 
+    // TODO: Hier onder heb ik de code nodig om de wifiPeriphSet op te halen uit die wifi_setup.c
 
     // esp_periph_config_t periph_cfg = DEFAULT_ESP_PERIPH_SET_CONFIG();
     // esp_periph_set_handle_t set = esp_periph_set_init(&periph_cfg);
@@ -111,11 +114,11 @@ void start_radio(void * url)
     // esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
     // esp_periph_start(set, wifi_handle);
     // periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
-    
+
     // Example of using an audio event -- START
     ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
-    audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
+    evt = audio_event_iface_init(&evt_cfg);
 
     ESP_LOGI(TAG, "[4.1] Listening event from all elements of pipeline");
     audio_pipeline_set_listener(pipeline, evt);
@@ -126,17 +129,18 @@ void start_radio(void * url)
     ESP_LOGI(TAG, "[ 5 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
 
-    while (1) {
+    while (1)
+    {
         audio_event_iface_msg_t msg;
         esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
-        if (ret != ESP_OK) {
+        if (ret != ESP_OK)
+        {
             ESP_LOGE(TAG, "[ * ] Event interface error : %d", ret);
             continue;
         }
 
-        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
-            && msg.source == (void *) mp3_decoder
-            && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *)mp3_decoder && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO)
+        {
             audio_element_info_t music_info = {0};
             audio_element_getinfo(mp3_decoder, &music_info);
 
@@ -148,15 +152,18 @@ void start_radio(void * url)
         }
 
         /* Stop when the last pipeline element (i2s_stream_writer in this case) receives stop event */
-        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) i2s_stream_writer
-            && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
-            && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED))) {
+        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *)i2s_stream_writer && msg.cmd == AEL_MSG_CMD_REPORT_STATUS && (((int)msg.data == AEL_STATUS_STATE_STOPPED) || ((int)msg.data == AEL_STATUS_STATE_FINISHED)))
+        {
             ESP_LOGW(TAG, "[ * ] Stop event received");
             break;
         }
     }
     // Example of using an audio event -- END
+    stop_audio_pipeline();
+}
 
+void stop_audio_pipeline()
+{
     ESP_LOGI(TAG, "[ 6 ] Stop audio_pipeline");
     audio_pipeline_stop(pipeline);
     audio_pipeline_wait_for_stop(pipeline);
@@ -181,5 +188,5 @@ void start_radio(void * url)
     audio_element_deinit(http_stream_reader);
     audio_element_deinit(i2s_stream_writer);
     audio_element_deinit(mp3_decoder);
-    //esp_periph_set_destroy(set);
+    // esp_periph_set_destroy(set);
 }
