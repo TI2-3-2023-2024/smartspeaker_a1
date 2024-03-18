@@ -25,8 +25,8 @@ menu_page song_play_page;
 menu_page radio_play_page;
 
 radio_station selected_station;
-radio_station stations[3];
-int station_index;
+static radio_station stations[3];
+static int station_index = 0;
 
 static const uint8_t char_data[] = {
     0x04, 0x0e, 0x0e, 0x0e, 0x1f, 0x00, 0x04, 0x00,
@@ -69,20 +69,17 @@ void input_menu()
 * Returns: None
 */
 void radio_page_init(){
-     current_page = radio_selection_page;
+    current_page = radio_selection_page;
 
     stations[0] = (radio_station){1, "Sunrise", "http://185.66.249.48:8006/stream?type=.mp3"};
     stations[1] = (radio_station){2, "Jumbo FM", "https://playerservices.streamtheworld.com/api/livestream-redirect/JUMBORADIO.mp3"};
     stations[2] = (radio_station){3, "Slam FM", "https://stream.slam.nl/web10_mp3"};
 
-    radio_selection_menu(stations);
+    radio_selection_menu();
 }
 
-void radio_selection_menu(radio_station stations[])
+void radio_selection_menu()
 {
-    selected_station = stations[0];
-    station_index = 0;
-
     hd44780_clear(&lcd);
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, "SELECT RADIO STATION");
@@ -91,24 +88,27 @@ void radio_selection_menu(radio_station stations[])
     hd44780_puts(&lcd, "RADIO: ");
 
     hd44780_gotoxy(&lcd, 7, 1);
-    hd44780_puts(&lcd, stations[0].radio_name);
+    hd44780_puts(&lcd, stations[station_index].radio_name);
 
+    if ((station_index + 1) < (sizeof(stations) / sizeof(stations[0]))){
     hd44780_gotoxy(&lcd, 0, 2);
     hd44780_puts(&lcd, "NEXT: ");
 
-    hd44780_gotoxy(&lcd, 6, 2);
-    hd44780_puts(&lcd, stations[1].radio_name);
+    hd44780_gotoxy(&lcd, 7, 2);
+    hd44780_puts(&lcd, stations[station_index + 1].radio_name);
+    }
 
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
 
-    selected_station = stations[0];
+    selected_station = stations[station_index];
 }
 
 void select_next(){
     if (station_index < (sizeof(stations) / sizeof(stations[0]))){
         station_index++;
-        selected_station = stations[station_index];
+        // selected_station = stations[station_index];
+        radio_selection_menu();
         printf(selected_station.radio_name);
     }
 }
@@ -116,7 +116,8 @@ void select_next(){
 void select_previous(){
     if (station_index > 0){
         station_index--;
-        selected_station = stations[station_index];
+        // selected_station = stations[station_index];
+         radio_selection_menu();
          printf(selected_station.radio_name);
     }
 }
@@ -185,7 +186,9 @@ void radio_play_menu()
 
     hd44780_clear(&lcd);
     hd44780_gotoxy(&lcd, 0, 0);
-    hd44780_puts(&lcd, "PLAYING RADIO");
+    hd44780_puts(&lcd, "PLAYING RADIO:");
+    hd44780_gotoxy(&lcd, 0, 1);
+    hd44780_puts(&lcd, selected_station.radio_name);
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | X | X | x");
 
