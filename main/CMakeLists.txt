@@ -10,7 +10,8 @@ set(COMPONENT_SRCS "main.c"
 "i2c_display.c" "i2c_display.h"
 "lib/buttonreader.c" "lib/buttonreader.h"
 "lib/internet_radio.c" "lib/internet_radio.h"
-"lib/ntp.c" "lib/ntp.h" "lib/wifi_setup.c" "lib/wifi_setup.h")
+"lib/ntp.c" "lib/ntp.h" "lib/wifi_setup.c" "lib/wifi_setup.h"
+"lib/goertzel_filter.h" "components/goertzel_filter/goertzel_filter.c")
 set(COMPONENT_ADD_INCLUDEDIRS .)
 
 register_component()

@@ -11,7 +11,7 @@
  */
 #include <math.h>
 
-#include "include/goertzel_filter.h"
+#include "../../lib/goertzel_filter.h"
 
 //static const char *TAG = "GOERTZEL_FILTER";
 
