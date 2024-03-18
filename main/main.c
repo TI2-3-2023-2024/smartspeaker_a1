@@ -54,8 +54,8 @@ void app_main()
     if (xMutex != NULL){
       
       printf("WTF MAAK AAN /n");
-        //  xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
-        xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+        xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+        
     }
 
 }

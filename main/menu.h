@@ -36,7 +36,7 @@ typedef struct
 void input_menu();
 void main_menu();
 void song_selection_menu(song songs[], size_t size);
-void radio_selection_menu(radio_station stations[]);
+void radio_selection_menu();
 
 void init_lcd();
 void getButtonValue();
