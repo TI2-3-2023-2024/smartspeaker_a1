@@ -49,11 +49,11 @@ void app_main()
 
 
     //init lcd and start main menu
-    printf("ik ben hier /n/n");
 
+    //check if mutex correctly made and creates "start_reader" task
     if (xMutex != NULL){
       
-      printf("WTF MAAK AAN /n");
+ 
         xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
         
     }

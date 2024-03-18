@@ -37,181 +37,6 @@ static esp_err_t write_lcd_data(const hd44780_t *lcd, uint8_t data)
     return pcf8574_port_write(&pcf8574, data);
 }
 
-void main_menu()
-{
-    current_page = main_page;
-
-    hd44780_clear(&lcd);
-    hd44780_gotoxy(&lcd, 0, 0);
-    hd44780_puts(&lcd, "SELECT TYPE");
-    hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "SD | RADIO | MIC | x");
-}
-
-void input_menu()
-{
-    current_page = input_page;
-
-    hd44780_clear(&lcd);
-    hd44780_gotoxy(&lcd, 0, 0);
-    hd44780_puts(&lcd, "INPUT");
-
-    hd44780_gotoxy(&lcd, 0, 1);
-    hd44780_puts(&lcd, "TALK INTO THE MIC");
-
-    hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK | x | x | x");
-}
-
-/*
- * Function: initialiseer de inhoud van de radio pagina
- * Parameters: None
- * Returns: None
- */
-void radio_page_init()
-{
-    stations[0] = (radio_station){1, "Sunrise", "http://185.66.249.48:8006/stream?type=.mp3"};
-    stations[1] = (radio_station){2, "Jumbo FM", "https://playerservices.streamtheworld.com/api/livestream-redirect/JUMBORADIO.mp3"};
-    stations[2] = (radio_station){3, "Slam FM", "https://stream.slam.nl/web10_mp3"};
-
-    radio_selection_menu();
-}
-
-void radio_selection_menu()
-{
-    current_page = radio_selection_page;
-
-    hd44780_clear(&lcd);
-    hd44780_gotoxy(&lcd, 0, 0);
-    hd44780_puts(&lcd, "SELECT RADIO STATION");
-
-    hd44780_gotoxy(&lcd, 0, 1);
-    hd44780_puts(&lcd, "RADIO: ");
-
-    hd44780_gotoxy(&lcd, 7, 1);
-    hd44780_puts(&lcd, stations[station_index].radio_name);
-
-    if ((station_index + 1) < (sizeof(stations) / sizeof(stations[0])))
-    {
-        hd44780_gotoxy(&lcd, 0, 2);
-        hd44780_puts(&lcd, "NEXT: ");
-
-        hd44780_gotoxy(&lcd, 7, 2);
-        hd44780_puts(&lcd, stations[station_index + 1].radio_name);
-    }
-
-    hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK | <- | -> | OK");
-
-    selected_station = stations[station_index];
-}
-
-void select_next()
-{
-    if ((station_index + 1) < (sizeof(stations) / sizeof(stations[0])))
-    {
-        station_index++;
-        // selected_station = stations[station_index];
-        radio_selection_menu();
-        printf(selected_station.radio_name);
-    }
-}
-
-void select_previous()
-{
-    if (station_index > 0)
-    {
-        station_index--;
-        // selected_station = stations[station_index];
-        radio_selection_menu();
-        printf(selected_station.radio_name);
-    }
-}
-
-void disconnect_radio()
-{
-    //delete task
-    vTaskDelete(radio_task_handle);
-    
-    stop_audio_pipeline();
-
-    radio_selection_menu();
-}
-
-/*
- * Function: initialiseer de inhoud van de "song" pagina
- * Parameters: None
- * Returns: None
- */
-void song_page_init()
-{
-    current_page = song_selection_page;
-
-    song songs[3] = {
-        {1, "brood"},
-        {2, "plankje"},
-        {3, "knakworst"}};
-
-    size_t num_songs = sizeof(songs) / sizeof(songs[0]);
-
-    song_selection_menu(songs, num_songs);
-}
-
-void song_selection_menu(song songs[], size_t size)
-{
-    hd44780_clear(&lcd);
-    hd44780_gotoxy(&lcd, 0, 0);
-    hd44780_puts(&lcd, "SELECT SONG");
-
-    char song_count[20];
-
-    sprintf(song_count, "%d/%d", songs[0].id, size);
-
-    hd44780_gotoxy(&lcd, 15, 0);
-    hd44780_puts(&lcd, song_count);
-
-    hd44780_gotoxy(&lcd, 0, 1);
-    hd44780_puts(&lcd, "SONG:");
-
-    hd44780_gotoxy(&lcd, 6, 1);
-    hd44780_puts(&lcd, songs[0].song_name);
-
-    hd44780_gotoxy(&lcd, 0, 2);
-    hd44780_puts(&lcd, "NEXT: ");
-
-    hd44780_gotoxy(&lcd, 6, 2);
-    hd44780_puts(&lcd, songs[1].song_name);
-
-    hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK | <- | -> | OK");
-}
-
-void song_play_menu()
-{
-    current_page = song_play_page;
-
-    hd44780_clear(&lcd);
-    hd44780_gotoxy(&lcd, 0, 0);
-    hd44780_puts(&lcd, "PLAYING SONG");
-    hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK | X | X | x");
-}
-
-void radio_play_menu()
-{
-    current_page = radio_play_page;
-
-    hd44780_clear(&lcd);
-    hd44780_gotoxy(&lcd, 0, 0);
-    hd44780_puts(&lcd, "PLAYING RADIO:");
-    hd44780_gotoxy(&lcd, 0, 1);
-    hd44780_puts(&lcd, selected_station.radio_name);
-    hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK | X | X | x");
-
-    xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, selected_station.url, 5, &radio_task_handle);
-}
-
 /*
  * Function: initialiseer de setting voor het LCD scherm
  * Parameters: None
@@ -243,6 +68,187 @@ void init_lcd()
 
     hd44780_upload_character(&lcd, 0, char_data);
     hd44780_upload_character(&lcd, 1, char_data + 8);
+}
+
+/*
+ * Function: initialiseer de inhoud van de radio pagina
+ * Parameters: None
+ * Returns: None
+ */
+void radio_page_init()
+{
+    stations[0] = (radio_station){1, "Sunrise", "http://185.66.249.48:8006/stream?type=.mp3"};
+    stations[1] = (radio_station){2, "Jumbo FM", "https://playerservices.streamtheworld.com/api/livestream-redirect/JUMBORADIO.mp3"};
+    stations[2] = (radio_station){3, "Slam FM", "https://stream.slam.nl/web10_mp3"};
+
+    radio_selection_menu();
+}
+
+/*
+ * Function: initialiseer de inhoud van de "song" pagina
+ * Parameters: None
+ * Returns: None
+ */
+void song_page_init()
+{
+    current_page = song_selection_page;
+
+    song songs[3] = {
+        {1, "brood"},
+        {2, "plankje"},
+        {3, "knakworst"}};
+
+    size_t num_songs = sizeof(songs) / sizeof(songs[0]);
+
+    song_selection_menu(songs, num_songs);
+}
+
+void main_menu()
+{
+    current_page = main_page;
+
+    hd44780_clear(&lcd);
+    hd44780_gotoxy(&lcd, 0, 0);
+    hd44780_puts(&lcd, "SELECT TYPE");
+    hd44780_gotoxy(&lcd, 0, 3);
+    hd44780_puts(&lcd, "SD | RADIO | MIC | x");
+}
+
+void input_menu()
+{
+    current_page = input_page;
+
+    hd44780_clear(&lcd);
+    hd44780_gotoxy(&lcd, 0, 0);
+    hd44780_puts(&lcd, "INPUT");
+
+    hd44780_gotoxy(&lcd, 0, 1);
+    hd44780_puts(&lcd, "TALK INTO THE MIC");
+
+    hd44780_gotoxy(&lcd, 0, 3);
+    hd44780_puts(&lcd, "BACK | x | x | x");
+}
+
+void radio_selection_menu()
+{
+    current_page = radio_selection_page;
+
+    hd44780_clear(&lcd);
+    hd44780_gotoxy(&lcd, 0, 0);
+    hd44780_puts(&lcd, "SELECT RADIO STATION");
+
+    hd44780_gotoxy(&lcd, 0, 1);
+    hd44780_puts(&lcd, "RADIO: ");
+
+    hd44780_gotoxy(&lcd, 7, 1);
+    hd44780_puts(&lcd, stations[station_index].radio_name);
+
+    if ((station_index + 1) < (sizeof(stations) / sizeof(stations[0])))
+    {
+        hd44780_gotoxy(&lcd, 0, 2);
+        hd44780_puts(&lcd, "NEXT: ");
+
+        hd44780_gotoxy(&lcd, 7, 2);
+        hd44780_puts(&lcd, stations[station_index + 1].radio_name);
+    }
+
+    hd44780_gotoxy(&lcd, 0, 3);
+    hd44780_puts(&lcd, "BACK | <- | -> | OK");
+
+    selected_station = stations[station_index];
+}
+
+void song_play_menu()
+{
+    current_page = song_play_page;
+
+    hd44780_clear(&lcd);
+    hd44780_gotoxy(&lcd, 0, 0);
+    hd44780_puts(&lcd, "PLAYING SONG");
+    hd44780_gotoxy(&lcd, 0, 3);
+    hd44780_puts(&lcd, "BACK | X | X | x");
+}
+
+void radio_play_menu()
+{
+    current_page = radio_play_page;
+
+    hd44780_clear(&lcd);
+    hd44780_gotoxy(&lcd, 0, 0);
+    hd44780_puts(&lcd, "PLAYING RADIO:");
+    hd44780_gotoxy(&lcd, 0, 1);
+    hd44780_puts(&lcd, selected_station.radio_name);
+    hd44780_gotoxy(&lcd, 0, 3);
+    hd44780_puts(&lcd, "BACK | X | X | x");
+
+    xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, selected_station.url, 5, &radio_task_handle);
+}
+
+void song_selection_menu(song songs[], size_t size)
+{
+    hd44780_clear(&lcd);
+    hd44780_gotoxy(&lcd, 0, 0);
+    hd44780_puts(&lcd, "SELECT SONG");
+
+    char song_count[20];
+
+    sprintf(song_count, "%d/%d", songs[0].id, size);
+
+    hd44780_gotoxy(&lcd, 15, 0);
+    hd44780_puts(&lcd, song_count);
+
+    hd44780_gotoxy(&lcd, 0, 1);
+    hd44780_puts(&lcd, "SONG:");
+
+    hd44780_gotoxy(&lcd, 6, 1);
+    hd44780_puts(&lcd, songs[0].song_name);
+
+    hd44780_gotoxy(&lcd, 0, 2);
+    hd44780_puts(&lcd, "NEXT: ");
+
+    hd44780_gotoxy(&lcd, 6, 2);
+    hd44780_puts(&lcd, songs[1].song_name);
+
+    hd44780_gotoxy(&lcd, 0, 3);
+    hd44780_puts(&lcd, "BACK | <- | -> | OK");
+}
+
+void select_next()
+{
+    if ((station_index + 1) < (sizeof(stations) / sizeof(stations[0])))
+    {
+        station_index++;
+        // selected_station = stations[station_index];
+        radio_selection_menu();
+        printf(selected_station.radio_name);
+    }
+}
+
+void select_previous()
+{
+    if (station_index > 0)
+    {
+        station_index--;
+        // selected_station = stations[station_index];
+        radio_selection_menu();
+        printf(selected_station.radio_name);
+    }
+}
+
+/*
+ * Function: zorgt dat de connectie met de radio netjes wordt afgesloten
+ * Parameters: None
+ * Returns: None
+ */
+
+void disconnect_radio()
+{
+    //delete task
+    vTaskDelete(radio_task_handle);
+    
+    stop_audio_pipeline();
+
+    radio_selection_menu();
 }
 
 /*
