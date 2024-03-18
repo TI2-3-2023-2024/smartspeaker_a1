@@ -7,7 +7,7 @@ Beschrijving: code voor het tonen en navigeren van het menu op het lcd scherm
 
 #include "menu.h"
 #include "sharedvariable.h"
-#include "internet_radio.h"
+#include "lib/internet_radio.h"
 
 static i2c_dev_t pcf8574;
 

@@ -13,7 +13,7 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 #include "lib\buttonreader.h"
 #include "sharedvariable.h"
 
-#include "internet_radio.h"
+#include "lib/internet_radio.h"
 #include "lib/ntp.h"
 #include "lib/wifi_setup.h"
 
