@@ -127,7 +127,7 @@ void init_sd_card_player(void *pVParameters)
     input_cfg.handle = set;
     input_ser = input_key_service_create(&input_cfg);
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
-    periph_service_set_callback(input_ser, input_key_service_cb, (void *)board_handle);
+    //periph_service_set_callback(input_ser, input_key_service_cb, (void *)board_handle);
 
     ESP_LOGI(SD_TAG, "[4.0] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -207,26 +207,26 @@ void init_sd_card_player(void *pVParameters)
                 continue;
             }
             // Advance to the next song when previous finishes
-            if (msg.source == (void *)i2s_stream_writer && msg.cmd == AEL_MSG_CMD_REPORT_STATUS)
-            {
-                audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
-                if (el_state == AEL_STATE_FINISHED)
-                {
-                    ESP_LOGI(SD_TAG, "[ * ] Finished, advancing to the next song");
-                    sdcard_list_next(sdcard_list_handle, 1, &url);
-                    ESP_LOGW(SD_TAG, "URL: %s", url);
-                    /* In previous versions, audio_pipeline_terminal() was called here. It will close all the element task and when we use
-                     * the pipeline next time, all the tasks should be restarted again. It wastes too much time when we switch to another music.
-                     * So we use another method to achieve this as below.
-                     */
-                    audio_element_set_uri(fatfs_stream_reader, url);
-                    audio_pipeline_reset_ringbuffer(pipeline);
-                    audio_pipeline_reset_elements(pipeline);
-                    audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
-                    audio_pipeline_run(pipeline);
-                }
-                continue;
-            }
+            // if (msg.source == (void *)i2s_stream_writer && msg.cmd == AEL_MSG_CMD_REPORT_STATUS)
+            // {
+            //     audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
+            //     if (el_state == AEL_STATE_FINISHED)
+            //     {
+            //         ESP_LOGI(SD_TAG, "[ * ] Finished, advancing to the next song");
+            //         sdcard_list_next(sdcard_list_handle, 1, &url);
+            //         ESP_LOGW(SD_TAG, "URL: %s", url);
+            //         /* In previous versions, audio_pipeline_terminal() was called here. It will close all the element task and when we use
+            //          * the pipeline next time, all the tasks should be restarted again. It wastes too much time when we switch to another music.
+            //          * So we use another method to achieve this as below.
+            //          */
+            //         audio_element_set_uri(fatfs_stream_reader, url);
+            //         audio_pipeline_reset_ringbuffer(pipeline);
+            //         audio_pipeline_reset_elements(pipeline);
+            //         audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
+            //         audio_pipeline_run(pipeline);
+            //     }
+            //     continue;
+            // }
         }
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
@@ -335,4 +335,13 @@ void stop_peripherals(){
     esp_periph_set_stop_all(set);
     sdcard_list_destroy(sdcard_list_handle);
     esp_periph_set_destroy(set);
+}
+
+void play_song(int index){
+    sdcard_list_next(sdcard_list_handle, index + 1, &url);
+    audio_element_set_uri(fatfs_stream_reader, url);
+    audio_pipeline_reset_ringbuffer(pipeline);
+    audio_pipeline_reset_elements(pipeline);
+    audio_pipeline_change_state(pipeline, AEL_STATE_INIT);
+    audio_pipeline_run(pipeline);
 }

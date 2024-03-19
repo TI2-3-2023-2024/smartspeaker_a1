@@ -40,6 +40,8 @@ static int station_index = 0;
 TaskHandle_t radio_task_handle;
 TaskHandle_t sd_task_handle;
 
+static int song_index = 0;
+
 static const uint8_t char_data[] = {
     0x04, 0x0e, 0x0e, 0x0e, 0x1f, 0x00, 0x04, 0x00,
     0x1f, 0x11, 0x0a, 0x04, 0x0a, 0x11, 0x1f, 0x00};
@@ -186,10 +188,14 @@ void song_play_menu()
     hd44780_clear(&lcd);
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, "PLAYING SONG");
+    hd44780_gotoxy(&lcd, 0, 1);
+    hd44780_puts(&lcd, songs[song_index].song_name);
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | X | X | x");
 
     xTaskCreate(init_sd_card_player, "init_sd_card_player", configMINIMAL_STACK_SIZE * 6, NULL, 5, &sd_task_handle);
+    vTaskDelay(pdMS_TO_TICKS(500));
+    play_song(song_index);
 }
 
 void radio_play_menu()
@@ -215,7 +221,7 @@ void song_selection_menu()
 
     char song_count[20];
 
-    sprintf(song_count, "%d/%d", songs[0].id, playlist_size);
+    sprintf(song_count, "%d/%d", song_index + 1, playlist_size);
 
     hd44780_gotoxy(&lcd, 15, 0);
     hd44780_puts(&lcd, song_count);
@@ -224,15 +230,19 @@ void song_selection_menu()
     hd44780_puts(&lcd, "SONG:");
 
     hd44780_gotoxy(&lcd, 6, 1);
-    char *song_name_1 = format_song_name(songs[0].song_name);
+    char *song_name_1 = format_song_name(songs[song_index].song_name);
     hd44780_puts(&lcd, song_name_1);
 
-    hd44780_gotoxy(&lcd, 0, 2);
-    hd44780_puts(&lcd, "NEXT: ");
 
-    hd44780_gotoxy(&lcd, 6, 2);
-    char *song_name_2 = format_song_name(songs[1].song_name);
-    hd44780_puts(&lcd, song_name_2);
+    if ((song_index + 1) < playlist_size)
+    {
+        hd44780_gotoxy(&lcd, 0, 2);
+        hd44780_puts(&lcd, "NEXT: ");
+
+        hd44780_gotoxy(&lcd, 6, 2);
+        char *song_name_2 = format_song_name(songs[song_index + 1].song_name);
+        hd44780_puts(&lcd, song_name_2);
+    }
 
     hd44780_gotoxy(&lcd, 0, 3);
     hd44780_puts(&lcd, "BACK | <- | -> | OK");
@@ -258,7 +268,7 @@ void time_menu(const char* Format) {
     startTimeUpdateTask(Format);
 }
 
-void select_next()
+void select_next_station()
 {
     if ((station_index + 1) < (sizeof(stations) / sizeof(stations[0])))
     {
@@ -269,7 +279,7 @@ void select_next()
     }
 }
 
-void select_previous()
+void select_previous_station()
 {
     if (station_index > 0)
     {
@@ -277,6 +287,28 @@ void select_previous()
         // selected_station = stations[station_index];
         radio_selection_menu();
         printf(selected_station.radio_name);
+    }
+}
+
+void select_next_song()
+{
+    if ((song_index + 1) < playlist_size)
+    {
+        song_index++;
+        // selected_station = stations[station_index];
+        song_selection_menu();
+        // printf(selected_station.radio_name);
+    }
+}
+
+void select_previous_song()
+{
+    if (song_index > 0)
+    {
+        song_index--;
+        // selected_station = stations[station_index];
+        song_selection_menu();
+        // printf(selected_station.radio_name);
     }
 }
 
@@ -349,14 +381,14 @@ void initPages()
 
     song_selection_page.set_lcd_text = song_selection_menu;
     song_selection_page.button1 = song_play_menu;
-    song_selection_page.button2 = NULL;
-    song_selection_page.button3 = NULL;
+    song_selection_page.button2 = select_next_song;
+    song_selection_page.button3 = select_previous_song;
     song_selection_page.button4 = unmount_sd;
 
     radio_selection_page.set_lcd_text = radio_selection_menu;
     radio_selection_page.button1 = radio_play_menu;
-    radio_selection_page.button2 = select_next;
-    radio_selection_page.button3 = select_previous;
+    radio_selection_page.button2 = select_next_station;
+    radio_selection_page.button3 = select_previous_station;
     radio_selection_page.button4 = main_menu;
 
     radio_play_page.set_lcd_text = radio_play_menu;
