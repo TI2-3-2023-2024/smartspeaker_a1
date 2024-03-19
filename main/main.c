@@ -30,7 +30,7 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 #include "fatfs_stream.h"
 #include "i2s_stream.h"
 #include "raw_stream.h"
-#include "mp3_decoder.h"
+#include "wav_decoder.h"
 #include "filter_resample.h"
 
 
@@ -73,9 +73,9 @@ static const int GOERTZEL_DETECT_FREQS[] = {
 
 SemaphoreHandle_t xMutex;
 
-audio_pipeline_handle_t pipeline;
+audio_pipeline_handle_t pipeline_writer;
 audio_pipeline_handle_t pipeline_reader;
-audio_element_handle_t i2s_stream_reader, raw_reader, mp3_decoder, fatfs_stream_reader, rsp_handle_read;
+audio_element_handle_t i2s_stream_reader, raw_reader, wav_decoder_reader, wav_decoder_writer, fatfs_stream_reader, fatfs_stream_writer, rsp_handle_read, rsp_handle_writer, i2s_stream_writer;
 playlist_operator_handle_t sdcard_list_handle = NULL;
 
 goertzel_filter_cfg_t filters_cfg[GOERTZEL_NR_FREQS];
@@ -141,7 +141,7 @@ void sdcard_url_save_cb(void *user_data, char *url)
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Fail to save sdcard url to sdcard playlist");
     }
-}
+    }
 
 void sd_card_without_buttons(void * vParameters)
 {
@@ -173,7 +173,7 @@ void sd_card_without_buttons(void * vParameters)
 
     ESP_LOGI(TAG, "[1.2] Set up a sdcard playlist and scan sdcard music save to it");
     sdcard_list_create(&sdcard_list_handle);
-    sdcard_scan(sdcard_url_save_cb, "/sdcard/songs", 0, (const char *[]) {"mp3"}, 1, sdcard_list_handle);
+    sdcard_scan(sdcard_url_save_cb, "/sdcard/songs", 0, (const char *[]) {"wav"}, 1, sdcard_list_handle);
     sdcard_list_show(sdcard_list_handle);
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
@@ -183,11 +183,22 @@ void sd_card_without_buttons(void * vParameters)
     ESP_LOGI(TAG, "[4.0.1] Create reader pipeline for playback");
     pipeline_reader = create_pipeline();
 
-    i2s_stream_reader = create_i2s_stream(AUDIO_SAMPLE_RATE, AUDIO_STREAM_READER);
+    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    pipeline_writer = audio_pipeline_init(&pipeline_cfg);
+    mem_assert(pipeline_writer);
 
-    ESP_LOGI(TAG, "[4.2] Create mp3 decoder to decode mp3 file");
-    mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
-    mp3_decoder = mp3_decoder_init(&mp3_cfg);
+     ESP_LOGI(TAG, "[4.1] Create i2s stream to write data to codec chip");
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.type = AUDIO_STREAM_WRITER;
+    i2s_stream_writer = i2s_stream_init(&i2s_cfg);
+    i2s_stream_set_clk(i2s_stream_writer, 48000, 16, 2);
+
+   // i2s_stream_reader = create_i2s_stream(AUDIO_SAMPLE_RATE, AUDIO_STREAM_READER);
+
+    ESP_LOGI(TAG, "[4.2] Create wav decoder to decode wav file");
+    wav_decoder_cfg_t wav_cfg = DEFAULT_WAV_DECODER_CONFIG();
+    wav_decoder_reader = wav_decoder_init(&wav_cfg);
+    wav_decoder_writer = wav_decoder_init(&wav_cfg);
 
     /* ZL38063 audio chip on board of ESP32-LyraTD-MSC does not support 44.1 kHz sampling frequency,
        so resample filter has been added to convert audio data to other rates accepted by the chip.
@@ -198,37 +209,54 @@ void sd_card_without_buttons(void * vParameters)
     rsp_handle_read = create_resample_filter(AUDIO_SAMPLE_RATE, 2, GOERTZEL_SAMPLE_RATE_HZ, 1);
     raw_reader = create_raw_stream();
 
+    rsp_filter_cfg_t rsp_cfg2 = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_handle_writer = rsp_filter_init(&rsp_cfg2);
+
     ESP_LOGI(TAG, "[4.4] Create fatfs stream to read data from sdcard");
     char *url = NULL;
     sdcard_list_current(sdcard_list_handle, &url);
     fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
     fatfs_cfg.type = AUDIO_STREAM_READER;
-    
     fatfs_stream_reader = fatfs_stream_init(&fatfs_cfg);
+    fatfs_stream_writer = fatfs_stream_init(&fatfs_cfg);
+
     audio_element_set_uri(fatfs_stream_reader, url);
-    audio_element_set_uri(raw_reader,url);
-    
+    audio_element_set_uri(fatfs_stream_writer, url);
+
+    audio_pipeline_register(pipeline_writer, fatfs_stream_writer, "file");
+    audio_pipeline_register(pipeline_writer, wav_decoder_writer, "wav");
+    audio_pipeline_register(pipeline_writer, rsp_handle_writer, "filter");
+    audio_pipeline_register(pipeline_writer, i2s_stream_writer, "i2s");
+    // audio_pipeline_register(pipeline_writer, raw_reader, "raw");
+
+    ESP_LOGI(TAG, "[4.6] Link it together [sdcard]-->fatfs_stream-->wav_decoder-->resample-->i2s_stream");
+    const char *link_tag[4] = {"file", "wav", "filter", "i2s"};
+    audio_pipeline_link(pipeline_writer, &link_tag[0], 4);
+
     audio_pipeline_register(pipeline_reader, fatfs_stream_reader, "file_r");
-    audio_pipeline_register(pipeline_reader, mp3_decoder, "mp3_r");
+    audio_pipeline_register(pipeline_reader, wav_decoder_reader, "wav_r");
     audio_pipeline_register(pipeline_reader, rsp_handle_read, "rsp_filter");
-    // audio_pipeline_register(pipeline_reader, i2s_stream_reader, "i2sreader");
     audio_pipeline_register(pipeline_reader, raw_reader, "raw");
+      
+    ESP_LOGI(TAG, "[4.6] Link it together [sdcard]-->fatfs_stream-->wav_decoder-->resample-->raw");
 
-    ESP_LOGI(TAG, "[4.6] Link it together [sdcard]-->fatfs_stream-->mp3_decoder-->resample-->i2s_stream-->[codec_chip]");
+    const char *link_tag2[3] = {"file_r", "wav_r", "rsp_filter", "raw"};
+    audio_pipeline_link(pipeline_writer, &link_tag2[0], 3);
 
-    const char *link_tag2[4] = {"file_r","mp3_r", "rsp_filter", "raw"};
-    audio_pipeline_link(pipeline_reader, &link_tag2[0], 4);
+    ringbuf_handle_t ringbuffer = audio_element_get_output_ringbuf(raw_reader);
+    audio_element_set_multi_output_ringbuf(raw_reader, ringbuffer,0);
 
     ESP_LOGI(TAG, "[5.0] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
     audio_event_iface_handle_t evt = audio_event_iface_init(&evt_cfg);
 
     ESP_LOGI(TAG, "[5.2] Start pipeline");
+    audio_pipeline_run(pipeline_writer);
     audio_pipeline_run(pipeline_reader);
 
     while (1) {
         ESP_LOGI(TAG,"reading from raw reader");
-        raw_stream_read(raw_reader, (char *) raw_buffer, GOERTZEL_BUFFER_LENGTH * sizeof(int16_t));
+        raw_stream_read(pipeline_reader, (char *) raw_buffer, GOERTZEL_BUFFER_LENGTH * sizeof(int16_t));
         ESP_LOGI(TAG, "completed reading from raw reader");
         //audio_element_input(fatfs_stream_reader,(char *) raw_buffer, GOERTZEL_BUFFER_LENGTH * sizeof(int16_t));
         for (int f = 0; f < GOERTZEL_NR_FREQS; f++) {
@@ -240,9 +268,7 @@ void sd_card_without_buttons(void * vParameters)
             if (goertzel_filter_new_magnitude(&filters_data[f], &magnitude)) {
                 detect_freq(filters_cfg[f].target_freq, magnitude);
             }
-      
-        }
-           
+        }    
     }
 
     ESP_LOGI(TAG, "Deallocate raw sample buffer memory");
@@ -252,7 +278,7 @@ void sd_card_without_buttons(void * vParameters)
     audio_pipeline_wait_for_stop(pipeline_reader);
     audio_pipeline_terminate(pipeline_reader);
 
-    audio_pipeline_unregister(pipeline_reader, mp3_decoder);
+    audio_pipeline_unregister(pipeline_reader, wav_decoder_reader);
     audio_pipeline_unregister(pipeline_reader, i2s_stream_reader);
     audio_pipeline_unregister(pipeline_reader, rsp_handle_read);
     audio_pipeline_unregister(pipeline_reader, raw_reader);
@@ -262,6 +288,17 @@ void sd_card_without_buttons(void * vParameters)
     audio_element_deinit(i2s_stream_reader);
     audio_element_deinit(rsp_handle_read);
     audio_element_deinit(raw_reader);
+
+    audio_pipeline_stop(pipeline_writer);
+    audio_pipeline_wait_for_stop(pipeline_writer);
+    audio_pipeline_terminate(pipeline_writer);
+
+    audio_pipeline_unregister(pipeline_writer, wav_decoder_writer);
+    audio_pipeline_unregister(pipeline_writer, i2s_stream_writer);
+    audio_pipeline_unregister(pipeline_writer, rsp_handle_read);
+
+    /* Terminate the pipeline before removing the listener */
+    audio_pipeline_remove_listener(pipeline_writer);
 
     /* Stop all peripherals before removing the listener */
     esp_periph_set_stop_all(set);
@@ -274,7 +311,7 @@ void sd_card_without_buttons(void * vParameters)
     sdcard_list_destroy(sdcard_list_handle);
     audio_pipeline_deinit(pipeline_reader);
     audio_element_deinit(i2s_stream_reader);
-    audio_element_deinit(mp3_decoder);
+    audio_element_deinit(wav_decoder_reader);
     esp_periph_set_destroy(set);
     
     vTaskDelete(NULL);
@@ -316,7 +353,8 @@ void app_main()
       
  
        // xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
-        xTaskCreate(sd_card_without_buttons, "sd_card_without_buttons", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+       sd_card_without_buttons(NULL);
+        //xTaskCreate(sd_card_without_buttons, "sd_card_without_buttons", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
         
     }
 
