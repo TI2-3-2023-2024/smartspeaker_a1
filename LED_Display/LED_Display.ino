@@ -54,24 +54,41 @@ void clear_display(){
 */
 void receiveEvent(int howMany)
 {
-  int x;
-  int y;
+  uint8_t x;
+  uint8_t y;
+  char c;
+
   while(Wire.available()) // loop through all but the last
   {
-    x = Wire.read(); // receive byte as a character
-    Serial.print("x: ");
-    Serial.print(x);         // print the character
-
+    c = Wire.read(); // read the command of what to do
+    Serial.print("c: ");
+    Serial.print(c);         // print the character
     Serial.println("");
 
-    y = Wire.read(); // receive byte as a character
-     Serial.print("y: ");
-    Serial.print(y);         // print the character
+    switch (c){
+      case 'b':
+        x = Wire.read(); // receive byte as a character
+        Serial.print("x: ");
+        Serial.print(x);         // print the character
+        Serial.println("");
+        set_brightness_of_leds(x);
+        break;
 
-       Serial.println("");
+      case 'c':
+        x = Wire.read(); // receive byte as a character
+        Serial.print("x: ");
+        Serial.print(x);         // print the character
+        Serial.println("");
+
+        y = Wire.read(); // receive byte as a character
+        Serial.print("y: ");
+        Serial.print(y);         // print the character
+        Serial.println("");
+        turn_below_point_on(x, y, 0, 255, 0);
+        break;
+
+    }
   }
-
-  turn_below_point_on(x, y, 0, 255, 0);
 }
 
 void turn_off_led(int x, int y){
@@ -107,13 +124,29 @@ void turn_on_led(int x, int y, int r, int g , int b){
     ws2812b.show();     
 }
 
+void set_brightness_of_leds(uint8_t value){
+  if (value > 255){
+    value = 254;
+  }
+  if (value < 0){
+    value = 0;
+  }
+
+  for(int x = 0; x < 32; x++){
+    for(int y = 0; y < 8; y++){
+      ws2812b.setBrightness(value);
+    }
+  }
+    ws2812b.show();   
+}
+
 void turn_on_row(int y, int r, int g, int b){
   for(int i = 0; i < 32; i++){
     turn_on_led(i, y, r, g, b);
   }
 }
 
-void turn_below_point_on(int x, int y, int r, int g, int b){
+void turn_below_point_on(uint8_t x, uint8_t y, int r, int g, int b){
   for(int i = y; i >= 0; i--){
     turn_on_led(x, i, r, g, b);
   }

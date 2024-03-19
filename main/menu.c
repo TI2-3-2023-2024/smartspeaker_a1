@@ -10,6 +10,7 @@ Beschrijving: code voor het tonen en navigeren van het menu op het lcd scherm
 #include "sharedvariable.h"
 #include "lib/internet_radio.h"
 #include "lib/sd_card_player.h"
+#include "i2c_display.h"
 
 static i2c_dev_t pcf8574;
 
@@ -39,6 +40,8 @@ static song *songs;
 static int station_index = 0;
 TaskHandle_t radio_task_handle;
 TaskHandle_t sd_task_handle;
+
+uint8_t brightness_leds = 240;
 
 static const uint8_t char_data[] = {
     0x04, 0x0e, 0x0e, 0x0e, 0x1f, 0x00, 0x04, 0x00,
@@ -187,7 +190,7 @@ void song_play_menu()
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, "PLAYING SONG");
     hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK | X | X | x");
+    hd44780_puts(&lcd, "BACK | x | x | x");
 
     xTaskCreate(init_sd_card_player, "init_sd_card_player", configMINIMAL_STACK_SIZE * 6, NULL, 5, &sd_task_handle);
 }
@@ -202,7 +205,7 @@ void radio_play_menu()
     hd44780_gotoxy(&lcd, 0, 1);
     hd44780_puts(&lcd, selected_station.radio_name);
     hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK | X | X | x");
+    hd44780_puts(&lcd, "BACK | - | + | x");
 
     xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, selected_station.url, 5, &radio_task_handle);
 }
@@ -328,6 +331,26 @@ const char *format_song_name(char *song_name)
     return formatted_name;
 }
 
+void increase_brightness(){
+    brightness_leds += 10;
+
+    if (brightness_leds >= 240){
+        brightness_leds = 240;
+    }
+
+    write_brightness_value(brightness_leds);
+}
+
+void decrease_brightness(){
+    brightness_leds -= 10;
+
+    if (brightness_leds <= 10){
+        brightness_leds = 10;
+    }
+
+    write_brightness_value(brightness_leds);
+}
+
 /*
  * Function: initialiseer de paginas met de bijbehorende navigatie
  * Parameters: None
@@ -361,8 +384,8 @@ void initPages()
 
     radio_play_page.set_lcd_text = radio_play_menu;
     radio_play_page.button1 = NULL;
-    radio_play_page.button2 = NULL;
-    radio_play_page.button3 = NULL;
+    radio_play_page.button2 = increase_brightness;
+    radio_play_page.button3 = decrease_brightness;
     radio_play_page.button4 = disconnect_radio;
 
     song_play_page.set_lcd_text = song_play_menu;

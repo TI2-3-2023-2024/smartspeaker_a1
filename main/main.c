@@ -26,13 +26,14 @@ void i2c_display_test()
 
     srand(time(NULL));
 
-    for (int i = 0; i < 16; i++)
+    for (uint8_t i = 0; i < 32; i++)
     {
-        int random = rand() % 8;
+        uint8_t random = rand() % 8;
         ESP_ERROR_CHECK(write_coordinates(i, random));
-        // vTaskDelay(pdMS_TO_TICKS(15));
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
-    // vTaskDelay(pdMS_TO_TICKS(1000));
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
     vTaskDelete(NULL);
 }
 
@@ -59,7 +60,7 @@ void app_main()
     // //test data
     // ESP_ERROR_CHECK(write_coordinates(7, 5));
     // ESP_ERROR_CHECK(write_coordinates(0, 5));
-    // ESP_ERROR_CHECK(write_coordinates(31, 5));
+    //ESP_ERROR_CHECK(write_coordinates(31, 5));
 
     // ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
     //  ESP_LOGI(TAG, "I2C unitialized successfully");
