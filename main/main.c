@@ -66,9 +66,9 @@ void app_main()
     // check if mutex correctly made and creates "start_reader" task
     if (xMutex != NULL)
     {
+        i2c_display_test();
 
         xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
         // xTaskCreate(init_sd_card_player, "init_sd_card_player", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
-        i2c_display_test();
     }
 }
