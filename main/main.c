@@ -21,6 +21,7 @@ SemaphoreHandle_t xMutex;
 
 void i2c_display_test()
 {
+    vTaskDelay(pdMS_TO_TICKS(1000));
     i2c_master_init();
 
     srand(time(NULL));
@@ -29,8 +30,10 @@ void i2c_display_test()
     {
         int random = rand() % 8;
         ESP_ERROR_CHECK(write_coordinates(i, random));
-        vTaskDelay(pdMS_TO_TICKS(5));
+        // vTaskDelay(pdMS_TO_TICKS(15));
     }
+    // vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelete(NULL);
 }
 
 void app_main()
@@ -66,8 +69,7 @@ void app_main()
     // check if mutex correctly made and creates "start_reader" task
     if (xMutex != NULL)
     {
-        i2c_display_test();
-
+        xTaskCreate(i2c_display_test, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
         xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
         // xTaskCreate(init_sd_card_player, "init_sd_card_player", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
     }
