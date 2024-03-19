@@ -301,8 +301,8 @@ void disconnect_sd()
     song_page_init();
 }
 
-void song_to_main(){
-    stop_sd_audio_pipeline();
+void unmount_sd(){
+    stop_peripherals();
     main_menu();
 }
 
@@ -348,7 +348,7 @@ void initPages()
     song_selection_page.button1 = song_play_menu;
     song_selection_page.button2 = NULL;
     song_selection_page.button3 = NULL;
-    song_selection_page.button4 = song_to_main;
+    song_selection_page.button4 = unmount_sd;
 
     radio_selection_page.set_lcd_text = radio_selection_menu;
     radio_selection_page.button1 = radio_play_menu;

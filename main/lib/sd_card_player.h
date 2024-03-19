@@ -36,3 +36,4 @@ extern char** song_names;
 void init_sd_card_player(void *pvParameters);
 void stop_sd_audio_pipeline();
 char** read_from_sd();
+void stop_peripherals();

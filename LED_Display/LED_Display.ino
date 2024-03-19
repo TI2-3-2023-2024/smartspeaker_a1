@@ -35,6 +35,15 @@ void setup() {
   //turn_on_led(5,5, 0, 255, 0);
 
   //turn_on_row(0, 255, 0, 0);
+  clear_display();
+}
+
+void clear_display(){
+  for(int i = 0; i < 32; i++){
+    for (int j = 0; j < 8; j++){
+        turn_off_led(i, j);
+    }
+  }
 }
 
 /* 
@@ -58,9 +67,11 @@ void receiveEvent(int howMany)
     y = Wire.read(); // receive byte as a character
      Serial.print("y: ");
     Serial.print(y);         // print the character
+
+       Serial.println("");
   }
 
-  turn_on_led(x, y, 0, 255, 0);
+  turn_below_point_on(x, y, 0, 255, 0);
 }
 
 void turn_off_led(int x, int y){
@@ -86,6 +97,11 @@ void turn_on_led(int x, int y, int r, int g , int b){
   }else {
     pixel += y;
   }
+
+  r = (255/7) * y;
+  g = 255 - ((255/7) * y);
+  b = 0;
+
     ws2812b.setPixelColor(pixel, ws2812b.Color(r, g, b));  // it only takes effect if pixels.show() is called
     ws2812b.setBrightness(50); // set brightness of the pixels
     ws2812b.show();     

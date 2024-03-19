@@ -330,3 +330,9 @@ void stop_sd_audio_pipeline()
     periph_service_destroy(input_ser);
     esp_periph_set_destroy(set);
 }
+
+void stop_peripherals(){
+    esp_periph_set_stop_all(set);
+    sdcard_list_destroy(sdcard_list_handle);
+    esp_periph_set_destroy(set);
+}
