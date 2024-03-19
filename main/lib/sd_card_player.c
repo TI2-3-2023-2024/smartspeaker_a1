@@ -337,6 +337,13 @@ void stop_peripherals(){
     esp_periph_set_destroy(set);
 }
 
+
+/*
+ * Functie: play_song
+ * Beschrijving: start de audio pipeline en speelt het nummer af van het meegegeven index
+ * Parameters: index = plaats van nummer in de playlist om af te spelen
+ * Retourneert: geen
+ */
 void play_song(int index){
     sdcard_list_next(sdcard_list_handle, index + 1, &url);
     audio_element_set_uri(fatfs_stream_reader, url);
