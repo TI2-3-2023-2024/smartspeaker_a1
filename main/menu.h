@@ -49,3 +49,6 @@ void time_menu_button3_handler();
 void init_lcd();
 void getButtonValue();
 const char *format_song_name(char *song_name);
+
+void decrease_brightness();
+void increase_brightness();
