@@ -33,7 +33,7 @@ int playlist_size;
 
 const char *day_format = "%H:%M:%S";
 const char *day_month_year_format = "%d %b %Y %H:%M";
-const char *full_format = "%A, %d %m %Y  %H:%M:%S";
+const char *full_format = "%A,%d %m %Y      %H:%M:%S";
 
 radio_station selected_station;
 static radio_station stations[3];
