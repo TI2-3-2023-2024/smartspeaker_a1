@@ -72,6 +72,7 @@ void receiveEvent(int howMany)
     switch (c){
       case 'b':
         x = Wire.read(); // receive byte as a character
+        set_brightness_of_leds(x);
         break;
 
       case 'c':
@@ -134,6 +135,9 @@ void fall_full_row(int x, int y){
 } 
 
 void startup_animation(){
+
+  ws2812b.clear();
+  ws2812b.show();
   
   int pixelArray[16];
   generateArray(pixelArray, 16);
@@ -179,7 +183,6 @@ void turn_on_led(int x, int y, int r, int g , int b){
   g = 255 - ((255/7) * y);
   b = 0;
        
-}
   ws2812b.setPixelColor(pixel, ws2812b.Color(r, g, b));  // it only takes effect if pixels.show() is called
   ws2812b.show();     
 }
