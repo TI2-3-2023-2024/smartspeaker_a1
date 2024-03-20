@@ -44,7 +44,8 @@ audio_element_handle_t http_stream_reader, i2s_stream_writer, mp3_decoder;
 esp_periph_set_handle_t set;
 audio_event_iface_handle_t evt;
 
-    void start_radio(void *url)
+    void
+    start_radio(void *url)
 {
     //     printf("\nIK START DE RADIO!!!\n");
     //     esp_err_t err = nvs_flash_init();

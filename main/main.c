@@ -19,21 +19,20 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 
 SemaphoreHandle_t xMutex;
 
-void i2c_display_test(void* vParameters)
+void i2c_display_test()
 {
     vTaskDelay(pdMS_TO_TICKS(1000));
     i2c_master_init();
 
     srand(time(NULL));
 
-    for (uint8_t i = 0; i < 32; i++)
+    for (int i = 0; i < 16; i++)
     {
-        uint8_t random = rand() % 8;
+        int random = rand() % 8;
         ESP_ERROR_CHECK(write_coordinates(i, random));
-        vTaskDelay(pdMS_TO_TICKS(20));
+        // vTaskDelay(pdMS_TO_TICKS(15));
     }
-     ESP_ERROR_CHECK(write_brightness_value(240));
-
+    // vTaskDelay(pdMS_TO_TICKS(1000));
     vTaskDelete(NULL);
 }
 
@@ -60,7 +59,7 @@ void app_main()
     // //test data
     // ESP_ERROR_CHECK(write_coordinates(7, 5));
     // ESP_ERROR_CHECK(write_coordinates(0, 5));
-    //ESP_ERROR_CHECK(write_coordinates(31, 5));
+    // ESP_ERROR_CHECK(write_coordinates(31, 5));
 
     // ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
     //  ESP_LOGI(TAG, "I2C unitialized successfully");
@@ -70,8 +69,7 @@ void app_main()
     // check if mutex correctly made and creates "start_reader" task
     if (xMutex != NULL)
     {
-        xTaskCreate(i2c_display_test, "i2c_display_test", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
-        //i2c_display_test(NULL);
+        xTaskCreate(i2c_display_test, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
         xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
         // xTaskCreate(init_sd_card_player, "init_sd_card_player", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
     }
