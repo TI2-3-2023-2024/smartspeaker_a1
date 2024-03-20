@@ -19,3 +19,4 @@ static const char *TAG = "i2c-simple-example";
 
 esp_err_t write_coordinates(uint8_t x, uint8_t y);
 esp_err_t i2c_master_init(void);
+esp_err_t write_animation_start();

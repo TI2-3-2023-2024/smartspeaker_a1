@@ -14,7 +14,7 @@ esp_err_t write_coordinates(uint8_t x, uint8_t y)
 esp_err_t write_animation_start()
 {
     int ret;
-    uint8_t write_buf[1] = {'c'};
+    char* write_buf[1] = {'s'};
     
     ret = i2c_master_write_to_device(I2C_MASTER_NUM, MPU9250_SENSOR_ADDR, write_buf, sizeof(write_buf), I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
 

@@ -39,7 +39,7 @@ void i2c_display_test()
 void startup_animation()
 {
     i2c_master_init();
-    esp_err_t write_animation_start();
+    ESP_ERROR_CHECK(write_animation_start());
 }
 
 void app_main()
