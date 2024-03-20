@@ -6,11 +6,14 @@ Beschrijving: code voor het tonen en navigeren van het menu op het lcd scherm
 */
 
 #include <time.h>
+#include <stdbool.h>
 #include "menu.h"
 #include "sharedvariable.h"
 #include "lib/internet_radio.h"
 #include "lib/sd_card_player.h"
 #include "i2c_display.h"
+
+#define BRIGHTNESS_INCREMENT_VALUE 10
 
 static i2c_dev_t pcf8574;
 
@@ -42,6 +45,7 @@ TaskHandle_t radio_task_handle;
 TaskHandle_t sd_task_handle;
 
 uint8_t brightness_leds = 240;
+bool i2c_init = true;
 
 static const uint8_t char_data[] = {
     0x04, 0x0e, 0x0e, 0x0e, 0x1f, 0x00, 0x04, 0x00,
@@ -85,6 +89,8 @@ void init_lcd()
 
     hd44780_upload_character(&lcd, 0, char_data);
     hd44780_upload_character(&lcd, 1, char_data + 8);
+
+
 }
 
 /*
@@ -132,7 +138,7 @@ void main_menu()
     hd44780_gotoxy(&lcd, 0, 0);
     hd44780_puts(&lcd, "SELECT TYPE");
     hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "SD | RADIO | MIC | T");
+    hd44780_puts(&lcd, "SD | RADIO | BR | TM");
 
     // Delete time update task if it exists
     deleteTimeUpdateTask();
@@ -144,13 +150,13 @@ void input_menu()
 
     hd44780_clear(&lcd);
     hd44780_gotoxy(&lcd, 0, 0);
-    hd44780_puts(&lcd, "INPUT");
+    hd44780_puts(&lcd, "BRIGHTNESS");
 
     hd44780_gotoxy(&lcd, 0, 1);
-    hd44780_puts(&lcd, "TALK INTO THE MIC");
+    hd44780_puts(&lcd, "SET BRIGHTNESS");
 
     hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK | x | x | x");
+    hd44780_puts(&lcd, "BACK | - | + | x");
 }
 
 void radio_selection_menu()
@@ -205,7 +211,7 @@ void radio_play_menu()
     hd44780_gotoxy(&lcd, 0, 1);
     hd44780_puts(&lcd, selected_station.radio_name);
     hd44780_gotoxy(&lcd, 0, 3);
-    hd44780_puts(&lcd, "BACK | - | + | x");
+    hd44780_puts(&lcd, "BACK | x | x | x");
 
     xTaskCreate(start_radio, "start reader", configMINIMAL_STACK_SIZE * 6, selected_station.url, 5, &radio_task_handle);
 }
@@ -331,23 +337,33 @@ const char *format_song_name(char *song_name)
     return formatted_name;
 }
 
+/*
+ * Function: Verhoogd de helderheid van het led-scherm.
+ * Parameters: None
+ * Returns: None
+ */
 void increase_brightness(){
-    brightness_leds += 10;
+    i2c_master_init(); // is nodig om i2c verbinding te maken als die verbroken was, anders wordt er niks doorgestuurd.
+    brightness_leds += BRIGHTNESS_INCREMENT_VALUE;
 
-    if (brightness_leds >= 240){
+    if (brightness_leds >= 240){ // max waarde is 255, maar 240 is fel genoeg.
         brightness_leds = 240;
     }
-
     write_brightness_value(brightness_leds);
 }
 
+/*
+ * Function: Verlaagd de helderheid van het led-scherm.
+ * Parameters: None
+ * Returns: None
+ */
 void decrease_brightness(){
-    brightness_leds -= 10;
+    i2c_master_init(); // is nodig om i2c verbinding te maken als die verbroken was, anders wordt er niks doorgestuurd.
+    brightness_leds -= BRIGHTNESS_INCREMENT_VALUE;
 
-    if (brightness_leds <= 10){
-        brightness_leds = 10;
+    if (brightness_leds <= 10){ // kan niet lager dan 0 zijn
+        brightness_leds = BRIGHTNESS_INCREMENT_VALUE;
     }
-
     write_brightness_value(brightness_leds);
 }
 
@@ -366,8 +382,8 @@ void initPages()
 
     input_page.set_lcd_text = input_menu;
     input_page.button1 = NULL;
-    input_page.button2 = NULL;
-    input_page.button3 = NULL;
+    input_page.button2 = increase_brightness;
+    input_page.button3 = decrease_brightness;
     input_page.button4 = main_menu;
 
     song_selection_page.set_lcd_text = song_selection_menu;
@@ -384,8 +400,8 @@ void initPages()
 
     radio_play_page.set_lcd_text = radio_play_menu;
     radio_play_page.button1 = NULL;
-    radio_play_page.button2 = increase_brightness;
-    radio_play_page.button3 = decrease_brightness;
+    radio_play_page.button2 = NULL;
+    radio_play_page.button3 = NULL;
     radio_play_page.button4 = disconnect_radio;
 
     song_play_page.set_lcd_text = song_play_menu;

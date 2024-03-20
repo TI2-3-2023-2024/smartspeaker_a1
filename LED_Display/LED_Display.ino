@@ -101,7 +101,6 @@ void turn_off_led(int x, int y){
     pixel += y;
   }
     ws2812b.setPixelColor(pixel, ws2812b.Color(0, 0, 0));  // it only takes effect if pixels.show() is called
-    ws2812b.setBrightness(50); // set brightness of the pixels
     ws2812b.show();     
 }
 
@@ -120,24 +119,12 @@ void turn_on_led(int x, int y, int r, int g , int b){
   b = 0;
 
     ws2812b.setPixelColor(pixel, ws2812b.Color(r, g, b));  // it only takes effect if pixels.show() is called
-    ws2812b.setBrightness(50); // set brightness of the pixels
     ws2812b.show();     
 }
 
 void set_brightness_of_leds(uint8_t value){
-  if (value > 255){
-    value = 254;
-  }
-  if (value < 0){
-    value = 0;
-  }
-
-  for(int x = 0; x < 32; x++){
-    for(int y = 0; y < 8; y++){
-      ws2812b.setBrightness(value);
-    }
-  }
-    ws2812b.show();   
+  ws2812b.setBrightness(value);
+  ws2812b.show();
 }
 
 void turn_on_row(int y, int r, int g, int b){

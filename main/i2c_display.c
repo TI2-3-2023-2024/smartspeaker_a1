@@ -14,10 +14,15 @@ esp_err_t write_coordinates(uint8_t x, uint8_t y)
     return ret;
 }
 
+/*
+ * Function: Schrijft de helderheid waarde naar het led-scherm.
+ * Parameters: Waarde van de helderheid
+ * Returns: esp_err_t om te controleren of de handeling correct is uitgevoerd.
+ */
 esp_err_t write_brightness_value(uint8_t value)
 {
     int ret;
-    uint8_t write_buf[2] = {'b', value};
+    uint8_t write_buf[2] = {'b', value}; // 'b' is de specifieke commando voor het aanpassen van de helderheid.
 
     ESP_LOGI("i2c-display", "Brightness aangepast naar het volgende %d", value);
     
