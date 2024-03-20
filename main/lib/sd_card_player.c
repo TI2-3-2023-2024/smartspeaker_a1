@@ -1,4 +1,67 @@
 #include "sd_card_player.h"
+#include <inttypes.h>
+
+#include "menu.h"
+#include "i2c_display.h"
+#include "lib\buttonreader.h"
+#include "sharedvariable.h"
+
+#include "lib/internet_radio.h"
+#include "lib/ntp.h"
+#include "lib/wifi_setup.h"
+
+#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#include "esp_log.h"
+#include "nvs_flash.h"
+
+#include "audio_element.h"
+#include "audio_pipeline.h"
+#include "audio_event_iface.h"
+#include "audio_common.h"
+#include "fatfs_stream.h"
+#include "i2s_stream.h"
+#include "raw_stream.h"
+#include "mp3_decoder.h"
+#include "filter_resample.h"
+
+#include "esp_peripherals.h"
+#include "periph_sdcard.h"
+#include "periph_touch.h"
+#include "periph_button.h"
+#include "input_key_service.h"
+#include "periph_adc_button.h"
+#include "board.h"
+
+#include "sdcard_list.h"
+#include "sdcard_scan.h"
+
+#include <math.h>
+#include "filter_resample.h"
+#include "lib/goertzel.h"
+
+#define GOERTZEL_SAMPLE_RATE_HZ 8000 // Sample rate in [Hz]
+#define GOERTZEL_FRAME_LENGTH_MS 100 // Block length in [ms]
+
+#define GOERTZEL_BUFFER_LENGTH (GOERTZEL_FRAME_LENGTH_MS * GOERTZEL_SAMPLE_RATE_HZ / 10000) // Buffer length in samples
+
+#define GOERTZEL_DETECTION_THRESHOLD 10.0f // Detect a tone when log magnitude is above this value
+
+#define AUDIO_SAMPLE_RATE 48000 // Audio capture sample rate [Hz]
+
+static const int GOERTZEL_DETECT_FREQS[] = {
+    50,
+    70,
+    200,
+    400,
+    1000,
+    3000,
+    5000,
+    15000};
+
+#define GOERTZEL_NR_FREQS ((sizeof GOERTZEL_DETECT_FREQS) / (sizeof GOERTZEL_DETECT_FREQS[0]))
 
 audio_pipeline_handle_t pipeline;
 audio_element_handle_t i2s_stream_writer, mp3_decoder, fatfs_stream_reader, rsp_handle;
@@ -6,85 +69,49 @@ playlist_operator_handle_t sdcard_list_handle = NULL;
 esp_periph_set_handle_t set;
 audio_event_iface_handle_t evt;
 periph_service_handle_t input_ser;
+audio_element_handle_t i2s_stream_reader, raw_reader, rsp_handle_read;
 char *url;
+int16_t *raw_buffer;
 
-static esp_err_t
-input_key_service_cb(periph_service_handle_t handle, periph_service_event_t *evt, void *ctx)
+goertzel_filter_cfg_t filters_cfg[GOERTZEL_NR_FREQS];
+goertzel_filter_data_t filters_data[GOERTZEL_NR_FREQS];
+
+static audio_element_handle_t create_i2s_stream(int sample_rate, audio_stream_type_t type)
 {
-    /* Handle touch pad events
-           to start, pause, resume, finish current song and adjust volume
-        */
-    audio_board_handle_t board_handle = (audio_board_handle_t)ctx;
-    int player_volume;
-    audio_hal_get_volume(board_handle->audio_hal, &player_volume);
+    i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
+    i2s_cfg.type = type;
+    i2s_cfg.i2s_config.sample_rate = sample_rate;
+    audio_element_handle_t i2s_stream = i2s_stream_init(&i2s_cfg);
+    return i2s_stream;
+}
 
-    if (evt->type == INPUT_KEY_SERVICE_ACTION_CLICK_RELEASE)
-    {
-        ESP_LOGI(SD_TAG, "[ * ] input key id is %d", (int)evt->data);
-        switch ((int)evt->data)
-        {
-        case INPUT_KEY_USER_ID_PLAY:
+static audio_element_handle_t create_resample_filter(
+    int source_rate, int source_channels, int dest_rate, int dest_channels)
+{
+    rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
+    rsp_cfg.src_rate = source_rate;
+    rsp_cfg.src_ch = source_channels;
+    rsp_cfg.dest_rate = dest_rate;
+    rsp_cfg.dest_ch = dest_channels;
+    audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+    return filter;
+}
 
-            ESP_LOGI(SD_TAG, "[ * ] [Play] input key event");
-            audio_element_state_t el_state = audio_element_get_state(i2s_stream_writer);
-            switch (el_state)
-            {
-            case AEL_STATE_INIT:
-                ESP_LOGI(SD_TAG, "[ * ] Starting audio pipeline");
-                audio_pipeline_run(pipeline);
-                break;
-            case AEL_STATE_RUNNING:
-                ESP_LOGI(SD_TAG, "[ * ] Pausing audio pipeline");
-                audio_pipeline_pause(pipeline);
-                break;
-            case AEL_STATE_PAUSED:
-                ESP_LOGI(SD_TAG, "[ * ] Resuming audio pipeline");
-                audio_pipeline_resume(pipeline);
-                break;
-            default:
-                ESP_LOGI(SD_TAG, "[ * ] Not supported state %d", el_state);
-            }
-            break;
-        case INPUT_KEY_USER_ID_SET:
-            ESP_LOGI(SD_TAG, "[ * ] [Set] input key event");
-            ESP_LOGI(SD_TAG, "[ * ] Stopped, advancing to the next song");
-            char *url = NULL;
-            audio_pipeline_stop(pipeline);
-            audio_pipeline_wait_for_stop(pipeline);
-            audio_pipeline_terminate(pipeline);
+static audio_element_handle_t create_raw_stream()
+{
+    raw_stream_cfg_t raw_cfg = {
+        .out_rb_size = 8 * 1024,
+        .type = AUDIO_STREAM_READER,
+    };
+    audio_element_handle_t raw_reader = raw_stream_init(&raw_cfg);
+    return raw_reader;
+}
 
-            sdcard_list_next(sdcard_list_handle, 1, &url);
-            ESP_LOGW(SD_TAG, "URL: %s", url);
-
-            audio_element_set_uri(fatfs_stream_reader, url);
-            audio_pipeline_reset_ringbuffer(pipeline);
-            audio_pipeline_reset_elements(pipeline);
-            audio_pipeline_run(pipeline);
-            break;
-        case INPUT_KEY_USER_ID_VOLUP:
-            ESP_LOGI(SD_TAG, "[ * ] [Vol+] input key event");
-            player_volume += 10;
-            if (player_volume > 100)
-            {
-                player_volume = 100;
-            }
-            audio_hal_set_volume(board_handle->audio_hal, player_volume);
-            ESP_LOGI(SD_TAG, "[ * ] Volume set to %d %%", player_volume);
-            break;
-        case INPUT_KEY_USER_ID_VOLDOWN:
-            ESP_LOGI(SD_TAG, "[ * ] [Vol-] input key event");
-            player_volume -= 10;
-            if (player_volume < 0)
-            {
-                player_volume = 0;
-            }
-            audio_hal_set_volume(board_handle->audio_hal, player_volume);
-            ESP_LOGI(SD_TAG, "[ * ] Volume set to %d %%", player_volume);
-            break;
-        }
-    }
-
-    return ESP_OK;
+static audio_pipeline_handle_t create_pipeline()
+{
+    audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+    audio_pipeline_handle_t pipeline = audio_pipeline_init(&pipeline_cfg);
+    return pipeline;
 }
 
 void sdcard_url_save_cb(void *user_data, char *url)
@@ -95,6 +122,18 @@ void sdcard_url_save_cb(void *user_data, char *url)
     {
         ESP_LOGE(SD_TAG, "Fail to save sdcard url to sdcard playlist");
     }
+}
+
+static float detect_freq(int target_freq, float magnitude)
+{
+    float logMagnitude = 10.0f * log10f(magnitude);
+    if (logMagnitude > GOERTZEL_DETECTION_THRESHOLD)
+    {
+        ESP_LOGI(SD_TAG, "Detection at frequency %d Hz (magnitude %.2f, log magnitude %.2f)", target_freq, magnitude, logMagnitude);
+        vTaskDelay(10);
+        return logMagnitude;
+    }
+    return 0.0;
 }
 
 /*
@@ -115,6 +154,18 @@ char *remove_path(char *file, const char *path)
     return filename;
 }
 
+void display_magnitude(float magnitude, int index)
+{
+    i2c_master_init();
+    vTaskDelay(pdMS_TO_TICKS(10));
+    int y_value = (int)((20 / (magnitude - 40)) * 7);
+    if (y_value > 7)
+    {
+        y_value = 7;
+    }
+    ESP_ERROR_CHECK(write_coordinates(index, y_value));
+}
+
 void init_sd_card_player(void *pVParameters)
 {
     ESP_LOGI(SD_TAG, "[ 2 ] Start codec chip");
@@ -127,12 +178,16 @@ void init_sd_card_player(void *pVParameters)
     input_cfg.handle = set;
     input_ser = input_key_service_create(&input_cfg);
     input_key_service_add_key(input_ser, input_key_info, INPUT_KEY_NUM);
-    //periph_service_set_callback(input_ser, input_key_service_cb, (void *)board_handle);
+    // periph_service_set_callback(input_ser, input_key_service_cb, (void *)board_handle);
 
     ESP_LOGI(SD_TAG, "[4.0] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     pipeline = audio_pipeline_init(&pipeline_cfg);
     mem_assert(pipeline);
+
+    ESP_LOGI(SD_TAG, "[4.0.1] Goertzel Create reader pipeline for playback");
+    // pipeline = create_pipeline();
+    i2s_stream_reader = create_i2s_stream(AUDIO_SAMPLE_RATE, AUDIO_STREAM_READER);
 
     ESP_LOGI(SD_TAG, "[4.1] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
@@ -151,6 +206,8 @@ void init_sd_card_player(void *pVParameters)
     ESP_LOGI(SD_TAG, "[4.3] Create resample filter");
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
     rsp_handle = rsp_filter_init(&rsp_cfg);
+    rsp_handle_read = create_resample_filter(AUDIO_SAMPLE_RATE, 2, GOERTZEL_SAMPLE_RATE_HZ, 1);
+    raw_reader = create_raw_stream();
 
     ESP_LOGI(SD_TAG, "[4.4] Create fatfs stream to read data from sdcard");
     url = NULL;
@@ -159,6 +216,10 @@ void init_sd_card_player(void *pVParameters)
     fatfs_cfg.type = AUDIO_STREAM_READER;
     fatfs_stream_reader = fatfs_stream_init(&fatfs_cfg);
     audio_element_set_uri(fatfs_stream_reader, url);
+
+    audio_pipeline_register(pipeline, rsp_handle_read, "rsp_filter");
+    audio_pipeline_register(pipeline, i2s_stream_reader, "i2sreader");
+    audio_pipeline_register(pipeline, raw_reader, "raw");
 
     ESP_LOGI(SD_TAG, "[4.5] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, fatfs_stream_reader, "file");
@@ -169,6 +230,7 @@ void init_sd_card_player(void *pVParameters)
     ESP_LOGI(SD_TAG, "[4.6] Link it together [sdcard]-->fatfs_stream-->mp3_decoder-->resample-->i2s_stream-->[codec_chip]");
     const char *link_tag[4] = {"file", "mp3", "filter", "i2s"};
     audio_pipeline_link(pipeline, &link_tag[0], 4);
+    // audio_pipeline_link(pipeline_reader, &link_tag[0], 5);
 
     ESP_LOGI(SD_TAG, "[5.0] Set up  event listener");
     audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
@@ -177,35 +239,34 @@ void init_sd_card_player(void *pVParameters)
     ESP_LOGI(SD_TAG, "[5.1] Listen for all pipeline events");
     audio_pipeline_set_listener(pipeline, evt);
 
-    ESP_LOGW(SD_TAG, "[ 6 ] Press the keys to control music player:");
-    ESP_LOGW(SD_TAG, "      [Play] to start, pause and resume, [Set] next song.");
-    ESP_LOGW(SD_TAG, "      [Vol-] or [Vol+] to adjust volume.");
+    // ESP_LOGI(SD_TAG, "[5.2] Start pipeline");
+    // audio_pipeline_run(pipeline_reader);
 
     while (1)
     {
         /* Handle event interface messages from pipeline
            to set music info and to advance to the next song
         */
-        audio_event_iface_msg_t msg;
-        esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
-        if (ret != ESP_OK)
-        {
-            ESP_LOGE(SD_TAG, "[ * ] Event interface error : %d", ret);
-            continue;
-        }
-        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT)
-        {
+        // audio_event_iface_msg_t msg;
+        // esp_err_t ret = audio_event_iface_listen(evt, &msg, portMAX_DELAY);
+        // if (ret != ESP_OK)
+        // {
+        //     ESP_LOGE(SD_TAG, "[ * ] Event interface error : %d", ret);
+        //     continue;
+        // }
+        // if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT)
+        // {
             // Set music info for a new song to be played
-            if (msg.source == (void *)mp3_decoder && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO)
-            {
-                audio_element_info_t music_info = {0};
-                audio_element_getinfo(mp3_decoder, &music_info);
-                ESP_LOGI(SD_TAG, "[ * ] Received music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
-                         music_info.sample_rates, music_info.bits, music_info.channels);
-                audio_element_setinfo(i2s_stream_writer, &music_info);
-                rsp_filter_set_src_info(rsp_handle, music_info.sample_rates, music_info.channels);
-                continue;
-            }
+            // if (msg.source == (void *)mp3_decoder && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO)
+            // {
+            //     audio_element_info_t music_info = {0};
+            //     audio_element_getinfo(mp3_decoder, &music_info);
+            //     ESP_LOGI(SD_TAG, "[ * ] Received music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
+            //              music_info.sample_rates, music_info.bits, music_info.channels);
+            //     audio_element_setinfo(i2s_stream_writer, &music_info);
+            //     rsp_filter_set_src_info(rsp_handle, music_info.sample_rates, music_info.channels);
+            //     continue;
+            // }
             // Advance to the next song when previous finishes
             // if (msg.source == (void *)i2s_stream_writer && msg.cmd == AEL_MSG_CMD_REPORT_STATUS)
             // {
@@ -227,14 +288,47 @@ void init_sd_card_player(void *pVParameters)
             //     }
             //     continue;
             // }
+        // }
+        raw_stream_read(raw_reader, (char *)raw_buffer, GOERTZEL_BUFFER_LENGTH * sizeof(int16_t));
+        for (int f = 0; f < GOERTZEL_NR_FREQS; f++)
+        {
+            float magnitude;
+
+            esp_err_t error = goertzel_filter_process(&filters_data[f], raw_buffer, GOERTZEL_BUFFER_LENGTH);
+            ESP_ERROR_CHECK(error);
+
+            goertzel_filter_new_magnitude(&filters_data[f], &magnitude);
+            float log_magnitude = detect_freq(filters_cfg[f].target_freq, magnitude);
+            display_magnitude(log_magnitude, f);
         }
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
     stop_sd_audio_pipeline();
 }
 
-char** read_from_sd()
+char **read_from_sd()
 {
+    esp_log_level_set("*", ESP_LOG_WARN);
+    esp_log_level_set(SD_TAG, ESP_LOG_INFO);
+
+    ESP_LOGI(SD_TAG, "Create raw sample buffer");
+    raw_buffer = (int16_t *)malloc((GOERTZEL_BUFFER_LENGTH * sizeof(int16_t)));
+    if (raw_buffer == NULL)
+    {
+        ESP_LOGE(SD_TAG, "Memory allocation for raw sample buffer failed");
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(SD_TAG, "Setup Goertzel detection filters");
+    for (int f = 0; f < GOERTZEL_NR_FREQS; f++)
+    {
+        filters_cfg[f].sample_rate = GOERTZEL_SAMPLE_RATE_HZ;
+        filters_cfg[f].target_freq = GOERTZEL_DETECT_FREQS[f];
+        filters_cfg[f].buffer_length = GOERTZEL_BUFFER_LENGTH;
+        esp_err_t error = goertzel_filter_setup(&filters_data[f], &filters_cfg[f]);
+        ESP_ERROR_CHECK(error);
+    }
+
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(SD_TAG, ESP_LOG_INFO);
 
@@ -302,6 +396,9 @@ char** read_from_sd()
 
 void stop_sd_audio_pipeline()
 {
+    ESP_LOGI(TAG, "Deallocate raw sample buffer memory");
+    free(raw_buffer);
+
     ESP_LOGI(SD_TAG, "[ 7 ] Stop audio_pipeline");
     audio_pipeline_stop(pipeline);
     audio_pipeline_wait_for_stop(pipeline);
@@ -310,9 +407,16 @@ void stop_sd_audio_pipeline()
     audio_pipeline_unregister(pipeline, mp3_decoder);
     audio_pipeline_unregister(pipeline, i2s_stream_writer);
     audio_pipeline_unregister(pipeline, rsp_handle);
+    audio_pipeline_unregister(pipeline, i2s_stream_reader);
+    audio_pipeline_unregister(pipeline, rsp_handle_read);
+    audio_pipeline_unregister(pipeline, raw_reader);
 
     /* Terminate the pipeline before removing the listener */
     audio_pipeline_remove_listener(pipeline);
+
+    audio_element_deinit(i2s_stream_reader);
+    audio_element_deinit(rsp_handle_read);
+    audio_element_deinit(raw_reader);
 
     /* Stop all peripherals before removing the listener */
     esp_periph_set_stop_all(set);
@@ -331,12 +435,12 @@ void stop_sd_audio_pipeline()
     esp_periph_set_destroy(set);
 }
 
-void stop_peripherals(){
+void stop_peripherals()
+{
     esp_periph_set_stop_all(set);
     sdcard_list_destroy(sdcard_list_handle);
     esp_periph_set_destroy(set);
 }
-
 
 /*
  * Functie: play_song
@@ -344,7 +448,8 @@ void stop_peripherals(){
  * Parameters: index = plaats van nummer in de playlist om af te spelen
  * Retourneert: geen
  */
-void play_song(int index){
+void play_song(int index)
+{
     sdcard_list_next(sdcard_list_handle, index + 1, &url);
     audio_element_set_uri(fatfs_stream_reader, url);
     audio_pipeline_reset_ringbuffer(pipeline);

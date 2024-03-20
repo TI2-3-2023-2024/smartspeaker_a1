@@ -184,6 +184,7 @@ void goertzel_reader()
     audio_board_handle_t board_handle = audio_board_init();
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_DECODE, AUDIO_HAL_CTRL_START);
 
+    //note is anders
     ESP_LOGI(TAG, "[4.0.1] Create reader pipeline for playback");
     pipeline_reader = create_pipeline();
 
