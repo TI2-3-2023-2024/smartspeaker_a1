@@ -69,8 +69,10 @@ void app_main()
     // check if mutex correctly made and creates "start_reader" task
     if (xMutex != NULL)
     {
-        xTaskCreate(i2c_display_test, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
-        xTaskCreate(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
+        xTaskCreatePinnedToCore(i2c_display_test, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL, 1);
+        xTaskCreatePinnedToCore(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL, 1);
+        xTaskCreatePinnedToCore(goertzel_reader, "sd_card_without_buttons", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL, 0);
+
         // xTaskCreate(init_sd_card_player, "init_sd_card_player", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL);
     }
 }
