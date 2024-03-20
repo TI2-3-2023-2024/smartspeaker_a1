@@ -75,7 +75,7 @@ SemaphoreHandle_t xMutex;
 audio_pipeline_handle_t pipeline;
 audio_pipeline_handle_t pipeline_reader;
 audio_element_handle_t i2s_stream_reader, raw_reader, mp3_decoder, fatfs_stream_reader, rsp_handle, rsp_handle_read;
-playlist_operator_handle_t sdcard_list_handle = NULL;
+playlist_operator_handle_t sdcard_list_handle2 = NULL;
 
 goertzel_filter_cfg_t filters_cfg[GOERTZEL_NR_FREQS];
 goertzel_filter_data_t filters_data[GOERTZEL_NR_FREQS];
@@ -134,7 +134,7 @@ static void detect_freq(int target_freq, float magnitude)
         vTaskDelay(10);
     }
 }
-void sdcard_url_save_cb(void *user_data, char *url)
+void sdcard_url_save_cb2(void *user_data, char *url)
 {
     playlist_operator_handle_t sdcard_handle = (playlist_operator_handle_t)user_data;
     printf("url: %s", url);
@@ -145,7 +145,7 @@ void sdcard_url_save_cb(void *user_data, char *url)
     }
 }
 
-void goertzel_reader(void *vParameters)
+void goertzel_reader()
 {
     esp_log_level_set("*", ESP_LOG_WARN);
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -176,9 +176,9 @@ void goertzel_reader(void *vParameters)
     audio_board_sdcard_init(set, SD_MODE_1_LINE);
 
     ESP_LOGI(TAG, "[1.2] Set up a sdcard playlist and scan sdcard music save to it");
-    sdcard_list_create(&sdcard_list_handle);
-    sdcard_scan(sdcard_url_save_cb, "/sdcard/songs", 0, (const char *[]){"mp3"}, 1, sdcard_list_handle);
-    sdcard_list_show(sdcard_list_handle);
+    sdcard_list_create(&sdcard_list_handle2);
+    sdcard_scan(sdcard_url_save_cb2, "/sdcard/songs", 0, (const char *[]){"mp3"}, 1, sdcard_list_handle2);
+    sdcard_list_show(sdcard_list_handle2);
 
     ESP_LOGI(TAG, "[ 2 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
@@ -205,7 +205,7 @@ void goertzel_reader(void *vParameters)
 
     ESP_LOGI(TAG, "[4.4] Create fatfs stream to read data from sdcard");
     char *url = NULL;
-    sdcard_list_current(sdcard_list_handle, &url);
+    sdcard_list_current(sdcard_list_handle2, &url);
     fatfs_stream_cfg_t fatfs_cfg = FATFS_STREAM_CFG_DEFAULT();
     fatfs_cfg.type = AUDIO_STREAM_READER;
     fatfs_stream_reader = fatfs_stream_init(&fatfs_cfg);
@@ -271,7 +271,7 @@ void goertzel_reader(void *vParameters)
     audio_event_iface_destroy(evt);
 
     /* Release all resources */
-    sdcard_list_destroy(sdcard_list_handle);
+    sdcard_list_destroy(sdcard_list_handle2);
     audio_pipeline_deinit(pipeline_reader);
     audio_element_deinit(i2s_stream_reader);
     audio_element_deinit(mp3_decoder);

@@ -16,6 +16,7 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 #include "lib/ntp.h"
 #include "lib/wifi_setup.h"
 #include "lib/sd_card_player.h"
+#include "goertzel_filter.h"
 
 SemaphoreHandle_t xMutex;
 
@@ -69,7 +70,7 @@ void app_main()
     // check if mutex correctly made and creates "start_reader" task
     if (xMutex != NULL)
     {
-        xTaskCreatePinnedToCore(i2c_display_test, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL, 1);
+        // xTaskCreatePinnedToCore(i2c_display_test, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL, 1);
         xTaskCreatePinnedToCore(start_reader, "start reader", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL, 1);
         xTaskCreatePinnedToCore(goertzel_reader, "sd_card_without_buttons", configMINIMAL_STACK_SIZE * 6, NULL, 5, NULL, 0);
 

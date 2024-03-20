@@ -12,6 +12,6 @@
 #ifndef GOERTZEL_FILTER_H
 #define GOERTZEL_FILTER_H
 
-void goertzel_reader(void *vParameters);
+void goertzel_reader();
 
 #endif
