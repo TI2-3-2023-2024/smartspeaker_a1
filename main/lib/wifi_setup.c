@@ -11,6 +11,7 @@
 #include "esp_wifi.h"
 #include "periph_wifi.h"
 #include "nvs_flash.h"
+#include "lib/connection_animation.h"
 
 esp_periph_set_handle_t wifiPeriphSet;
 
@@ -47,6 +48,16 @@ void wifi_setup_start() {
         .wifi_config.sta.password = WIFI_PASSWORD,
     };
     esp_periph_handle_t wifi_handle = periph_wifi_init(&wifi_cfg);
+    
+  
+    start_connect_animation();
     esp_periph_start(wifiPeriphSet, wifi_handle);
+    
+    TaskHandle_t connect_animation_handle = NULL;
+    xTaskCreate(establish_connect_animation_task, "establish_connect_animation_task", configMINIMAL_STACK_SIZE * 4, NULL, 1,&connect_animation_handle);
+    
     periph_wifi_wait_for_connected(wifi_handle, portMAX_DELAY);
+    vTaskDelete(connect_animation_handle);
+    finish_connect_animation();
+   
 }

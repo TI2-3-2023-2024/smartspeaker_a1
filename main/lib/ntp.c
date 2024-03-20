@@ -7,6 +7,7 @@
 
 #include "ntp.h"
 #include "esp_log.h"
+#include "lib/connection_animation.h"
 
 static const char *TAG = "dntp";
 
@@ -28,6 +29,7 @@ void ntp_set_timezone(const char *timezone) {
 * Retourneert: Geen 
 */
 void ntp_initialize(void) {
+    start_ntp_connect_animation();
     ntp_set_timezone("CET-1CEST,M3.5.0,M10.5.0/3");
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, "pool.ntp.org");
@@ -36,12 +38,16 @@ void ntp_initialize(void) {
     // Wait until time is obtained
     time_t now = 0;
     struct tm timeinfo = { 0 };
+    TaskHandle_t connect_ntp_animation_handle = NULL;
+    xTaskCreate(establish_ntp_connect_animation_task, "establish_ntp_connect_animation_task", configMINIMAL_STACK_SIZE * 4, NULL, 1,&connect_ntp_animation_handle);
     while (timeinfo.tm_year < (2024 - 1900)) {
         ESP_LOGI(TAG, "Waiting for time synchronization...");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
         time(&now);
         localtime_r(&now, &timeinfo);
     }
+    vTaskDelete(connect_ntp_animation_handle);
+    finish_ntp_connect_animation();
 }
 
 /* 
