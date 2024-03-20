@@ -16,6 +16,7 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 #include "lib/ntp.h"
 #include "lib/wifi_setup.h"
 #include "lib/sd_card_player.h"
+#include "lib/lcd_setup.h"
 
 SemaphoreHandle_t xMutex;
 
@@ -40,6 +41,7 @@ void app_main()
 {
     // // Start Wi-Fi setup
     ESP_ERROR_CHECK(i2cdev_init());
+    init_lcd();
     wifi_setup_start();
 
     char time_str[64];

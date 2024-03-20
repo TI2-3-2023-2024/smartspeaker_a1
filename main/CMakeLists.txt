@@ -12,7 +12,8 @@ set(COMPONENT_SRCS "main.c"
 "lib/internet_radio.c" "lib/internet_radio.h"
 "lib/ntp.c" "lib/ntp.h" "lib/wifi_setup.c" "lib/wifi_setup.h"
 "lib/sd_card_player.c" "lib/sd_card_player.h"
-"lib/connection_animation.c" "lib/connection_animation.h")
+"lib/connection_animation.c" "lib/connection_animation.h"
+"lib/lcd_setup.c "lib/lcd_setup.h)
 set(COMPONENT_ADD_INCLUDEDIRS .)
 
 register_component()
