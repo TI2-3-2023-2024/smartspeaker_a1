@@ -40,12 +40,12 @@ void i2c_display_test()
 void app_main()
 {
     // // Start Wi-Fi setup
-    wifi_setup_start();
+    // wifi_setup_start();
 
-    char time_str[64];
-    ESP_LOGI("main", "Initializing NTP...");
-    ntp_initialize();
-    ESP_LOGI("main", "NTP initialized.");
+    // char time_str[64];
+    // ESP_LOGI("main", "Initializing NTP...");
+    // ntp_initialize();
+    // ESP_LOGI("main", "NTP initialized.");
 
     // //test task voor de actuele tijd.
     // xTaskCreate(ntp_test, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
