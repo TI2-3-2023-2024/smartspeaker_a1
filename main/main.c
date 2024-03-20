@@ -19,6 +19,12 @@ Beschrijving: code om lcd menu aan te sturen voor sprint demo 1
 
 SemaphoreHandle_t xMutex;
 
+void startup_animation()
+{
+    i2c_master_init();
+    ESP_ERROR_CHECK(write_animation_start());
+}
+
 void i2c_display_test(void* vParameters)
 {
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -38,6 +44,10 @@ void i2c_display_test(void* vParameters)
 
 void app_main()
 {
+    ESP_ERROR_CHECK(i2cdev_init());
+    
+    startup_animation();
+    vTaskDelay(pdMS_TO_TICKS(5000));
     // // Start Wi-Fi setup
     wifi_setup_start();
 
@@ -50,8 +60,6 @@ void app_main()
     // xTaskCreate(ntp_test, "main_menu", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 
     xMutex = xSemaphoreCreateMutex();
-
-    ESP_ERROR_CHECK(i2cdev_init());
 
     ESP_ERROR_CHECK(i2c_master_init());
     ESP_LOGI(TAG, "I2C initialized successfully");

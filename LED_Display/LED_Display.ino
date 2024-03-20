@@ -87,7 +87,52 @@ void receiveEvent(int howMany)
         turn_below_point_on(x, y, 0, 255, 0);
         break;
 
+      case 's':
+        x = Wire.read(); //receive byte as a character
+        Serial.print("starting-upt");
+        startup_animation();
+        break;
+
     }
+  }
+}
+
+void fall_to_position(int x, int y){
+  for (int i = 7; i >= y; i--) {
+    turn_on_led(x, i, 0, 255, 0);
+    if( x%2==0 && x == 7 ){
+         continue;
+    }
+    turn_off_led(x, i + 1);
+
+
+  }
+}
+
+void fall_full_row(int x, int y){
+  for(int i = 0; i <= y; i++){
+    fall_to_position(x, i);
+  }
+
+}  
+
+
+void startup_animation(){
+  
+  int pixelArray[16];
+  generateArray(pixelArray, 16);
+
+  for (int i = 0; i<16; i++){
+    fall_full_row(i, pixelArray[i]);
+  }
+  delay(1000);
+  ws2812b.clear();
+  ws2812b.show();
+}
+
+void generateArray(int array[], int length) {
+  for (int i = 0; i < length; i++) {
+    array[i] = random(2, 8); // Generates random numbers between 0 and 7
   }
 }
 
