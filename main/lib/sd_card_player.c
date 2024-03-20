@@ -157,11 +157,14 @@ char *remove_path(char *file, const char *path)
 void display_magnitude(float magnitude, int index)
 {
     i2c_master_init();
-    vTaskDelay(pdMS_TO_TICKS(10));
-    int y_value = (int)((20 / (magnitude - 40)) * 7);
+    vTaskDelay(pdMS_TO_TICKS(50));
+    int y_value = (int)(((magnitude - 45) / 10) * 7);
     if (y_value > 7)
     {
         y_value = 7;
+    }
+    if (y_value < 0){
+        y_value = 0;
     }
     ESP_ERROR_CHECK(write_coordinates(index, y_value));
 }
