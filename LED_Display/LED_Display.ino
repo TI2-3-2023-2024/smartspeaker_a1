@@ -34,8 +34,9 @@ void setup() {
   //turn_on_led(8,7, 0, 255, 0);
   //turn_on_led(5,5, 0, 255, 0);
 
-  //turn_on_row(0, 255, 0, 0);
-  clear_display();
+  // turn_on_row(0, 255, 0, 0);
+  //turn_below_point_on(0, 5);
+  // clear_display();
 }
 
 void clear_display(){
@@ -54,24 +55,46 @@ void clear_display(){
 */
 void receiveEvent(int howMany)
 {
-  int x;
-  int y;
+  uint8_t x;
+  uint8_t y;
+  char c;
+
   while(Wire.available()) // loop through all but the last
   {
-    x = Wire.read(); // receive byte as a character
-    Serial.print("x: ");
-    Serial.print(x);         // print the character
-
+    c = Wire.read(); // read the command of what to do
+    Serial.print("c: ");
+    Serial.print(c);         // print the character
     Serial.println("");
 
-    y = Wire.read(); // receive byte as a character
-     Serial.print("y: ");
-    Serial.print(y);         // print the character
+    switch (c){
+      case 'b':
+        x = Wire.read(); // receive byte as a character
+        Serial.print("x: ");
+        Serial.print(x);         // print the character
+        Serial.println("");
+        set_brightness_of_leds(x);
+        break;
 
-       Serial.println("");
+      case 'c':
+        x = Wire.read(); // receive byte as a character
+        Serial.print("x: ");
+        Serial.print(x);         // print the character
+        Serial.println("");
+
+        y = Wire.read(); // receive byte as a character
+        Serial.print("y: ");
+        Serial.print(y);         // print the character
+        Serial.println("");
+        turn_below_point_on(x, y, 0, 255, 0);
+        break;
+      
+      case 's':
+        x = Wire.read(); //receive byte as a character
+        serial.print("starting-upt");
+        startup_animation();
+
+    }
   }
-
-  turn_below_point_on(x, y, 0, 255, 0);
 }
 
 void turn_off_led(int x, int y){
@@ -98,6 +121,7 @@ void turn_on_led(int x, int y, int r, int g , int b){
     pixel += y;
   }
 
+  
   r = (255/7) * y;
   g = 255 - ((255/7) * y);
   b = 0;
@@ -113,11 +137,53 @@ void turn_on_row(int y, int r, int g, int b){
   }
 }
 
-void turn_below_point_on(int x, int y, int r, int g, int b){
+void turn_below_point_on(int x, int y){
+
   for(int i = y; i >= 0; i--){
+
     turn_on_led(x, i, r, g, b);
   }
 }
+
+void fall_to_position(int x, int y){
+  for (int i = 7; i >= y; i--) {
+    turn_on_led(x, i, 0, 255, 0);
+    if( x%2==0 && x == 7 ){
+         continue;
+    }
+    turn_off_led(x, i + 1);
+
+
+  }
+}
+
+void fall_full_row(int x, int y){
+  for(int i = 0; i <= y; i++){
+    fall_to_position(x, i);
+  }
+
+}  
+
+
+void startup_animation(){
+  
+  int pixelArray[32];
+  generateArray(pixelArray, 32);
+
+  for (int i = 0; i<32; i++){
+    fall_full_row(i, pixelArray[i]);
+  }
+  delay(1000);
+  ws2812b.clear();
+  ws2812b.show();
+}
+
+void generateArray(int array[], int length) {
+  for (int i = 0; i < length; i++) {
+    array[i] = random(2, 8); // Generates random numbers between 0 and 7
+  }
+}
+
 
 void loop() {
 }
