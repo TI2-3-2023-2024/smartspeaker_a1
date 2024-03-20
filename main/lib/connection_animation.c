@@ -1,7 +1,11 @@
 #include "lib/connection_animation.h"
 #include "lib/lcd_setup.h"
 
-
+/*
+ * Function: animation for starting connection
+ * Parameters: None
+ * Returns: None
+ */
 void start_connect_animation()
 {
     hd44780_clear(&lcd);
@@ -9,7 +13,12 @@ void start_connect_animation()
     hd44780_puts(&lcd, "starting connection");
     vTaskDelay(750/portTICK_PERIOD_MS);
 }
-    
+
+/*
+ * Function: Animation when trying to connect
+ * Parameters: task parameters
+ * Returns: None
+ */
 void establish_connect_animation_task(void * pvParameters)
 {
     static const char* dots[3] = {".  ",".. ","..."};
@@ -26,7 +35,11 @@ void establish_connect_animation_task(void * pvParameters)
     }
    
 }
-
+/*
+ * Function: animation when connection is completed
+ * Parameters: None
+ * Returns: None
+ */
 void finish_connect_animation()
 {
     hd44780_clear(&lcd);
@@ -36,6 +49,11 @@ void finish_connect_animation()
  
 }
 
+/*
+ * Function: animation for starting ntp time retrieval
+ * Parameters: None
+ * Returns: None
+ */
 void start_ntp_connect_animation()
 {
     hd44780_clear(&lcd);
@@ -44,6 +62,11 @@ void start_ntp_connect_animation()
     vTaskDelay(750/portTICK_PERIOD_MS);
 }
 
+/*
+ * Function: Animation when trying to retrieve/sync time
+ * Parameters: task parameters
+ * Returns: None
+ */
 void establish_ntp_connect_animation_task(void * pvParameters)
 {
     static const char* dots[3] = {".  ",".. ","..."};
@@ -61,6 +84,11 @@ void establish_ntp_connect_animation_task(void * pvParameters)
    
 }
 
+/*
+ * Function: animation when ntp connection is completed
+ * Parameters: None
+ * Returns: None
+ */
 void finish_ntp_connect_animation()
 {
     hd44780_clear(&lcd);
