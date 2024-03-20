@@ -33,6 +33,7 @@ typedef struct
   void (*button4)(); 
 } menu_page;
 
+
 void input_menu();
 void main_menu();
 void song_selection_menu();
@@ -49,3 +50,6 @@ void time_menu_button3_handler();
 void init_lcd();
 void getButtonValue();
 const char *format_song_name(char *song_name);
+
+void increase_brightness();
+void decrease_brightness();
