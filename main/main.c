@@ -36,8 +36,18 @@ void i2c_display_test()
     vTaskDelete(NULL);
 }
 
+void startup_animation()
+{
+    i2c_master_init();
+    esp_err_t write_animation_start();
+}
+
 void app_main()
 {
+    ESP_ERROR_CHECK(i2cdev_init());
+
+    startup_animation();
+
     // // Start Wi-Fi setup
     wifi_setup_start();
 
@@ -51,7 +61,7 @@ void app_main()
 
     xMutex = xSemaphoreCreateMutex();
 
-    ESP_ERROR_CHECK(i2cdev_init());
+    
 
     ESP_ERROR_CHECK(i2c_master_init());
     ESP_LOGI(TAG, "I2C initialized successfully");
