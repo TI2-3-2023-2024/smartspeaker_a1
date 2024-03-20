@@ -20,7 +20,6 @@
 
 Adafruit_NeoPixel ws2812b(NUM_PIXELS, PIN_WS2812B, NEO_GRB + NEO_KHZ800);
 
-
 void setup() {
   Wire.begin(4);                // join i2c bus with address #4
   Wire.onReceive(receiveEvent); // register event
@@ -118,7 +117,9 @@ void fall_full_row(int x, int y){
 
 
 void startup_animation(){
-  
+  ws2812b.clear();
+  ws2812b.show();
+
   int pixelArray[16];
   generateArray(pixelArray, 16);
 
